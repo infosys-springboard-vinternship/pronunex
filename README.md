@@ -140,37 +140,9 @@ See detailed development guides:
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and development process.
 
-### Key Guidelines
-
-- Follow the architecture principles outlined above
-- Never use LLMs for pronunciation scoring
-- Maintain separation between NLP Core and LLM Engine
-- Write tests for new features
-- Update documentation as needed
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Academic Context
-
-This project was developed as part of the Infosys Springboard Virtual Internship program. It demonstrates the application of AI and NLP techniques to speech therapy, with a focus on:
-
-- Production-grade architecture
-- Scientific validity and reproducibility
-- Clear separation of AI responsibilities
-- Measurable user outcomes
-
-## Acknowledgments
-
-- Infosys Springboard for the internship opportunity
-- Wav2Vec2 team for the alignment model
-- Open-source community for the tools and libraries used
-
-## Support
-
-For issues and questions, please use the GitHub issue tracker.
-
----
-
-**Repository**: https://github.com/infosys-springboard-vinternship/pronunex.git
+**Author**: Abhishek Maurya
