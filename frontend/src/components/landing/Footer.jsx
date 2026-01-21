@@ -48,7 +48,7 @@ export default function Footer() {
                     <h4 className="footer-nav-title-enterprise">Connect</h4>
                     <div className="footer-social-links-enterprise">
                         <a
-                            href="https://github.com"
+                            href="https://github.com/infosys-springboard-vinternship"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="footer-social-link-enterprise"
@@ -57,7 +57,7 @@ export default function Footer() {
                             <Github aria-hidden="true" />
                         </a>
                         <a
-                            href="https://linkedin.com"
+                            href="https://www.linkedin.com/in/abhishekmaurya9118/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="footer-social-link-enterprise"
