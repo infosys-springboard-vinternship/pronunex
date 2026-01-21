@@ -1,0 +1,72 @@
+/**
+ * Technical Trust Section Styles - Enterprise
+ */
+
+.trust-section-enterprise {
+    padding: 6rem 0;
+    background: #ffffff;
+}
+
+.trust-grid-enterprise {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .trust-grid-enterprise {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+.trust-card-enterprise {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    border-radius: 1rem;
+    background: #f8fafc;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+}
+
+.trust-card-enterprise:hover {
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    border-color: rgba(16, 185, 129, 0.15);
+}
+
+.trust-icon-wrapper-enterprise {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border-radius: 1rem;
+    margin-bottom: 1.25rem;
+    transition: transform 0.3s ease;
+}
+
+.trust-card-enterprise:hover .trust-icon-wrapper-enterprise {
+    transform: scale(1.05);
+}
+
+.trust-icon-enterprise {
+    width: 28px;
+    height: 28px;
+    color: #059669;
+    stroke-width: 1.5px;
+    /* Consistent with navbar */
+}
+
+.trust-title-enterprise {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+}
+
+.trust-description-enterprise {
+    font-size: 0.9375rem;
+    color: #64748b;
+    line-height: 1.6;
+}

@@ -1,0 +1,195 @@
+/**
+ * Feature Grid Section Styles - Enterprise
+ * Hover-glow effects with unique gradient per card
+ */
+
+.features-enterprise {
+    padding: 6rem 0;
+    background: #f8fafc;
+}
+
+.features-grid-enterprise {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+    .features-grid-enterprise {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .features-grid-enterprise {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.feature-card-enterprise {
+    position: relative;
+    padding: 2rem 1.5rem;
+    background: #ffffff;
+    border-radius: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.feature-card-enterprise:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: transparent;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
+}
+
+.feature-card-enterprise:hover .feature-glow-enterprise {
+    opacity: 1;
+}
+
+.feature-card-enterprise:hover .feature-border-glow {
+    opacity: 1;
+}
+
+/* Glow overlay */
+.feature-glow-enterprise {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    border-radius: 1rem;
+}
+
+/* Border glow */
+.feature-border-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+/* Gradient variants */
+.gradient-emerald .feature-glow-enterprise {
+    background: linear-gradient(135deg,
+            rgba(16, 185, 129, 0.08) 0%,
+            rgba(16, 185, 129, 0.02) 100%);
+}
+
+.gradient-emerald .feature-border-glow {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, transparent 50%);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+}
+
+.gradient-emerald .feature-icon-wrapper-enterprise {
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+}
+
+.gradient-emerald .feature-icon-enterprise {
+    color: #059669;
+}
+
+.gradient-teal .feature-glow-enterprise {
+    background: linear-gradient(135deg,
+            rgba(20, 184, 166, 0.08) 0%,
+            rgba(20, 184, 166, 0.02) 100%);
+}
+
+.gradient-teal .feature-border-glow {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.3) 0%, transparent 50%);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+}
+
+.gradient-teal .feature-icon-wrapper-enterprise {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+}
+
+.gradient-teal .feature-icon-enterprise {
+    color: #0d9488;
+}
+
+.gradient-amber .feature-glow-enterprise {
+    background: linear-gradient(135deg,
+            rgba(245, 158, 11, 0.08) 0%,
+            rgba(245, 158, 11, 0.02) 100%);
+}
+
+.gradient-amber .feature-border-glow {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, transparent 50%);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+}
+
+.gradient-amber .feature-icon-wrapper-enterprise {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+}
+
+.gradient-amber .feature-icon-enterprise {
+    color: #d97706;
+}
+
+.gradient-rose .feature-glow-enterprise {
+    background: linear-gradient(135deg,
+            rgba(244, 63, 94, 0.08) 0%,
+            rgba(244, 63, 94, 0.02) 100%);
+}
+
+.gradient-rose .feature-border-glow {
+    background: linear-gradient(135deg, rgba(244, 63, 94, 0.3) 0%, transparent 50%);
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    padding: 1px;
+}
+
+.gradient-rose .feature-icon-wrapper-enterprise {
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+}
+
+.gradient-rose .feature-icon-enterprise {
+    color: #e11d48;
+}
+
+.feature-icon-wrapper-enterprise {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-icon-enterprise {
+    width: 28px;
+    height: 28px;
+    stroke-width: 1.5px;
+}
+
+.feature-title-enterprise {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.5rem;
+    position: relative;
+    z-index: 1;
+}
+
+.feature-description-enterprise {
+    font-size: 0.9375rem;
+    color: #64748b;
+    line-height: 1.6;
+    position: relative;
+    z-index: 1;
+}

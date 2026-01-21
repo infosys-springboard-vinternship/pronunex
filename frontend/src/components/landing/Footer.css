@@ -1,0 +1,131 @@
+/**
+ * Footer Styles - Enterprise
+ */
+
+.landing-footer-enterprise {
+    background: #0f172a;
+    color: #ffffff;
+    padding: 4rem 0 2rem;
+}
+
+.footer-container-enterprise {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+@media (min-width: 768px) {
+    .footer-container-enterprise {
+        grid-template-columns: 2fr 1fr 1fr;
+        padding: 0 2rem;
+    }
+}
+
+.footer-brand-enterprise {
+    max-width: 320px;
+}
+
+.footer-logo-enterprise {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.footer-logo-img-enterprise {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+}
+
+.footer-logo-text-enterprise {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.footer-tagline-enterprise {
+    font-size: 0.9375rem;
+    color: #94a3b8;
+    line-height: 1.6;
+}
+
+.footer-nav-title-enterprise {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #cbd5e1;
+    margin-bottom: 1rem;
+}
+
+.footer-nav-list-enterprise {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.footer-nav-link-enterprise {
+    font-size: 0.9375rem;
+    color: #94a3b8;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-nav-link-enterprise:hover {
+    color: #ffffff;
+}
+
+.footer-social-links-enterprise {
+    display: flex;
+    gap: 1rem;
+}
+
+.footer-social-link-enterprise {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 0.5rem;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+}
+
+.footer-social-link-enterprise:hover {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.footer-social-link-enterprise svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 1.5px;
+}
+
+.footer-bottom-enterprise {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+    .footer-bottom-enterprise {
+        padding: 2rem 2rem 0;
+    }
+}
+
+.footer-copyright-enterprise {
+    font-size: 0.875rem;
+    color: #64748b;
+    text-align: center;
+}
