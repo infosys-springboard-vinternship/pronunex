@@ -163,9 +163,7 @@ SUPABASE_STORAGE_BUCKET = os.getenv('SUPABASE_STORAGE_BUCKET', 'pronunex-dB')
 
 # LLM API Configuration
 GROQ_API_KEY = os.getenv('GROQ_API_KEY', '')
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')
 CEREBRAS_API_KEY = os.getenv('CEREBRAS_API_KEY', '')
-GEMINI_MODEL = os.getenv('GEMINI_MODEL', 'gemini-3-flash')
 
 # Pronunciation Scoring Configuration
 SCORING_CONFIG = {

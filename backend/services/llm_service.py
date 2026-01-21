@@ -1,7 +1,7 @@
 """
 LLM Service for Pronunex.
 
-Unified wrapper for Groq, Gemini, and Cerebras APIs.
+Unified wrapper for Groq and Cerebras APIs.
 Handles rate limiting, fallback, and response validation.
 
 CRITICAL: LLM is ONLY used for generating human-readable feedback text.
@@ -25,12 +25,11 @@ class LLMService:
     """
     Unified LLM service with provider fallback.
     
-    Priority order: Groq (fast) -> Gemini (reliable) -> Cerebras (high-throughput)
+    Priority order: Groq (fast) -> Cerebras (high-throughput)
     """
     
     def __init__(self):
         self.groq_client = None
-        self.gemini_client = None
         self.cerebras_client = None
         self._init_clients()
     
@@ -47,19 +46,6 @@ class LLMService:
                 logger.warning("Groq package not installed")
             except Exception as e:
                 logger.error(f"Groq init failed: {str(e)}")
-        
-        # Gemini
-        gemini_key = settings.GEMINI_API_KEY
-        if gemini_key:
-            try:
-                import google.generativeai as genai
-                genai.configure(api_key=gemini_key)
-                self.gemini_client = genai
-                logger.info("Gemini client initialized")
-            except ImportError:
-                logger.warning("Google Generative AI package not installed")
-            except Exception as e:
-                logger.error(f"Gemini init failed: {str(e)}")
         
         # Cerebras
         cerebras_key = settings.CEREBRAS_API_KEY
@@ -86,7 +72,7 @@ class LLMService:
         
         Args:
             prompt: The prompt to send
-            provider: 'groq', 'gemini', 'cerebras', or 'auto'
+            provider: 'groq', 'cerebras', or 'auto'
             max_tokens: Maximum response tokens
             temperature: Creativity (0-1)
             response_format: 'json' or 'text'
@@ -132,8 +118,6 @@ class LLMService:
             order = []
             if self.groq_client:
                 order.append("groq")
-            if self.gemini_client:
-                order.append("gemini")
             if self.cerebras_client:
                 order.append("cerebras")
             return order
@@ -150,8 +134,6 @@ class LLMService:
         
         if provider == "groq" and self.groq_client:
             return self._call_groq(prompt, max_tokens, temperature)
-        elif provider == "gemini" and self.gemini_client:
-            return self._call_gemini(prompt, max_tokens, temperature)
         elif provider == "cerebras" and self.cerebras_client:
             return self._call_cerebras(prompt, max_tokens, temperature)
         
@@ -169,20 +151,6 @@ class LLMService:
             temperature=temperature,
         )
         return response.choices[0].message.content
-    
-    def _call_gemini(self, prompt: str, max_tokens: int, temperature: float) -> str:
-        """Call Gemini API."""
-        model_name = settings.GEMINI_MODEL or "gemini-2.0-flash"
-        model = self.gemini_client.GenerativeModel(model_name)
-        
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "max_output_tokens": max_tokens,
-                "temperature": temperature,
-            }
-        )
-        return response.text
     
     def _call_cerebras(self, prompt: str, max_tokens: int, temperature: float) -> str:
         """Call Cerebras API."""
