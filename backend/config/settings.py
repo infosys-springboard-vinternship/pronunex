@@ -77,14 +77,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database Configuration
-# Uses Supabase PostgreSQL from DATABASE_URL or falls back to SQLite
+# USE_SUPABASE controls both database and storage switching
+USE_SUPABASE = os.getenv('USE_SUPABASE', 'false').lower() == 'true'
 DATABASE_URL = os.getenv('DATABASE_URL')
 
-if DATABASE_URL:
+if USE_SUPABASE and DATABASE_URL:
+    # Use Supabase PostgreSQL
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
 else:
+    # Use local SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -186,7 +189,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 # Supabase Storage Configuration
-USE_SUPABASE_STORAGE = os.getenv('USE_SUPABASE_STORAGE', 'false').lower() == 'true'
+USE_SUPABASE_STORAGE = USE_SUPABASE  # Alias for backward compatibility
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
