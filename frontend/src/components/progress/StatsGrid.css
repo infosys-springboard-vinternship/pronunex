@@ -1,0 +1,285 @@
+/* Stats Grid Styles */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+@media (min-width: 768px) {
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.stats-card {
+    background: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    animation: statsCardEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.stats-card:nth-child(1) {
+    animation-delay: 0ms;
+}
+
+.stats-card:nth-child(2) {
+    animation-delay: 80ms;
+}
+
+.stats-card:nth-child(3) {
+    animation-delay: 160ms;
+}
+
+.stats-card:nth-child(4) {
+    animation-delay: 240ms;
+}
+
+@keyframes statsCardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.stats-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: transparent;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12);
+}
+
+.stats-card:hover .stats-card-glow,
+.stats-card:hover .stats-card-border-glow {
+    opacity: 1;
+}
+
+.stats-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    z-index: 1;
+}
+
+.stats-card__label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+}
+
+.stats-card__icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.stats-card__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+    position: relative;
+    z-index: 1;
+}
+
+.stats-grid__sparkline {
+    margin-top: var(--space-2);
+    position: relative;
+    z-index: 1;
+}
+
+.stats-card__trend {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    margin-top: var(--space-1);
+    position: relative;
+    z-index: 1;
+}
+
+.stats-card__trend--up {
+    color: var(--color-success-600);
+}
+
+.stats-card__trend--down {
+    color: var(--color-error-600);
+}
+
+.stats-card__trend--neutral {
+    color: var(--text-tertiary);
+}
+
+/* Glow Effects */
+.stats-card-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    border-radius: var(--radius-xl);
+    z-index: 0;
+}
+
+.stats-card-border-glow {
+    position: absolute;
+    inset: -1px;
+    border-radius: var(--radius-xl);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+    padding: 1px;
+    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
+    z-index: 0;
+}
+
+/* Gradient Variants */
+.gradient-emerald .stats-card-glow {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%);
+}
+
+.gradient-emerald .stats-card-border-glow {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, transparent 50%);
+}
+
+.gradient-emerald .stats-card__icon {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: rgb(5, 150, 105);
+}
+
+.gradient-teal .stats-card-glow {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.02) 100%);
+}
+
+.gradient-teal .stats-card-border-glow {
+    background: linear-gradient(135deg, rgba(20, 184, 166, 0.3) 0%, transparent 50%);
+}
+
+.gradient-teal .stats-card__icon {
+    background-color: rgba(20, 184, 166, 0.1);
+    color: rgb(13, 148, 136);
+}
+
+.gradient-amber .stats-card-glow {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.02) 100%);
+}
+
+.gradient-amber .stats-card-border-glow {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, transparent 50%);
+}
+
+.gradient-amber .stats-card__icon {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: rgb(217, 119, 6);
+}
+
+.gradient-slate .stats-card-glow {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.08) 0%, rgba(100, 116, 139, 0.02) 100%);
+}
+
+.gradient-slate .stats-card-border-glow {
+    background: linear-gradient(135deg, rgba(100, 116, 139, 0.3) 0%, transparent 50%);
+}
+
+.gradient-slate .stats-card__icon {
+    background-color: rgba(100, 116, 139, 0.1);
+    color: rgb(71, 85, 105);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .stats-grid {
+        gap: var(--space-3);
+    }
+
+    .stats-card {
+        padding: var(--space-4);
+    }
+
+    .stats-card__value {
+        font-size: var(--text-xl);
+    }
+}
+
+/* Milestone Progress Styles */
+.stats-grid__milestone {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding-top: var(--space-1);
+}
+
+.stats-grid__milestone-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stats-grid__milestone-label {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.stats-grid__milestone-bar {
+    height: 6px;
+    background: var(--border-secondary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+}
+
+.stats-grid__milestone-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stats-grid__milestone-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stats-grid__milestone-count {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.stats-grid__milestone-emoji {
+    font-size: var(--text-sm);
+    animation: flameFlicker 1.5s ease-in-out infinite;
+}
+
+@keyframes flameFlicker {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.9;
+    }
+}

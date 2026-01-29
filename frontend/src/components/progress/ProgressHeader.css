@@ -1,0 +1,58 @@
+/* Progress Header Styles */
+
+.progress-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+}
+
+@media (min-width: 768px) {
+    .progress-header {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: space-between;
+    }
+}
+
+.progress-header__content {
+    flex: 1;
+}
+
+.progress-header__title {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.progress-header__subtitle {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+}
+
+.progress-header__trend {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    white-space: nowrap;
+}
+
+.progress-header__trend--up {
+    background-color: var(--color-success-50);
+    color: var(--color-success-600);
+}
+
+.progress-header__trend--down {
+    background-color: var(--color-error-50);
+    color: var(--color-error-600);
+}
+
+.progress-header__trend--neutral {
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}

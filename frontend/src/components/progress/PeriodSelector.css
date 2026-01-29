@@ -1,0 +1,37 @@
+/* Period Selector Styles */
+
+.period-selector {
+    display: flex;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+    gap: var(--space-1);
+}
+
+.period-selector__btn {
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.period-selector__btn:hover {
+    color: var(--text-primary);
+}
+
+.period-selector__btn:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+}
+
+.period-selector__btn--active {
+    background: var(--surface-primary);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}

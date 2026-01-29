@@ -3,230 +3,25 @@
  * Displays user's pronunciation improvement journey with detailed visualizations
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, Cell, PieChart, Pie
-} from 'recharts';
-import {
-    TrendingUp, TrendingDown, Minus, Target, Award, Clock, Flame,
-    ChevronRight, Calendar, Mic, BookOpen, Zap, Filter
-} from 'lucide-react';
+import { Mic, Zap } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { ENDPOINTS } from '../api/endpoints';
 import { Card } from '../components/Card';
-import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { NoProgress } from '../components/EmptyState';
+import {
+    ProgressHeader,
+    StatsGrid,
+    PhonemeMasterySection,
+    ProgressSkeleton,
+    SessionHistoryCard,
+    ScoreHistoryChart,
+    MilestonesBadges,
+    PROGRESS_CONFIG
+} from '../components/progress';
 import './Progress.css';
-
-// Chart color palette - uses teal/emerald theme
-const CHART_COLORS = {
-    primary: '#14b8a6',
-    primaryLight: '#5eead4',
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    neutral: '#64748b',
-};
-
-// Sparkline Component
-function Sparkline({ data = [], color = '#14b8a6', height = 36 }) {
-    const canvasRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || data.length === 0) return;
-
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const h = canvas.height;
-        const padding = 4;
-
-        ctx.clearRect(0, 0, width, h);
-
-        const max = Math.max(...data, 1);
-        const min = Math.min(...data, 0);
-        const range = max - min || 1;
-
-        const points = data.map((value, index) => ({
-            x: padding + (index / (data.length - 1)) * (width - padding * 2),
-            y: h - padding - ((value - min) / range) * (h - padding * 2)
-        }));
-
-        // Gradient fill
-        const gradient = ctx.createLinearGradient(0, 0, 0, h);
-        gradient.addColorStop(0, color + '30');
-        gradient.addColorStop(1, color + '05');
-
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, h);
-        ctx.lineTo(points[0].x, points[0].y);
-        for (let i = 0; i < points.length - 1; i++) {
-            const xMid = (points[i].x + points[i + 1].x) / 2;
-            const yMid = (points[i].y + points[i + 1].y) / 2;
-            ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
-        }
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.lineTo(points[points.length - 1].x, h);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        // Line
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-        for (let i = 0; i < points.length - 1; i++) {
-            const xMid = (points[i].x + points[i + 1].x) / 2;
-            const yMid = (points[i].y + points[i + 1].y) / 2;
-            ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
-        }
-        ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-        ctx.stroke();
-    }, [data, color, height]);
-
-    return (
-        <canvas
-            ref={canvasRef}
-            width={120}
-            height={height}
-            className="progress__sparkline"
-        />
-    );
-}
-
-// Stats Card Component
-function StatsCard({ icon: Icon, label, value, sparkData, trend, color = CHART_COLORS.primary }) {
-    const trendClass = trend > 0 ? 'up' : trend < 0 ? 'down' : 'neutral';
-
-    return (
-        <div className="progress__stat-card">
-            <div className="progress__stat-header">
-                <span className="progress__stat-label">{label}</span>
-                <div className="progress__stat-icon" style={{ backgroundColor: color + '20', color }}>
-                    <Icon size={18} />
-                </div>
-            </div>
-            <span className="progress__stat-value">{value}</span>
-            {sparkData && sparkData.length > 0 && (
-                <Sparkline data={sparkData} color={color} />
-            )}
-            {trend !== undefined && trend !== null && (
-                <div className={`progress__stat-trend progress__stat-trend--${trendClass}`}>
-                    {trend > 0 && <TrendingUp size={14} />}
-                    {trend < 0 && <TrendingDown size={14} />}
-                    {trend === 0 && <Minus size={14} />}
-                    <span>{trend > 0 ? '+' : ''}{trend}% this week</span>
-                </div>
-            )}
-        </div>
-    );
-}
-
-// Phoneme Mastery Bar Component
-function PhonemeMasteryBar({ phoneme, symbol, score, attempts }) {
-    const percentage = Math.round(score * 100);
-    const level = score >= 0.85 ? 'mastered' : score >= 0.7 ? 'proficient' : score >= 0.5 ? 'developing' : 'needs-work';
-    const levelLabel = score >= 0.85 ? 'Mastered' : score >= 0.7 ? 'Proficient' : score >= 0.5 ? 'Developing' : 'Needs Work';
-
-    return (
-        <div className="progress__mastery-item">
-            <div className="progress__mastery-header">
-                <div className="progress__mastery-phoneme">
-                    <span className="progress__mastery-symbol">/{symbol || phoneme}/</span>
-                    <span className="progress__mastery-arpabet">{phoneme}</span>
-                </div>
-                <span className={`progress__mastery-badge progress__mastery-badge--${level}`}>
-                    {levelLabel}
-                </span>
-            </div>
-            <div className="progress__mastery-bar-container">
-                <div
-                    className={`progress__mastery-bar progress__mastery-bar--${level}`}
-                    style={{ width: `${percentage}%` }}
-                />
-            </div>
-            <div className="progress__mastery-meta">
-                <span className="progress__mastery-score">{percentage}%</span>
-                <span className="progress__mastery-attempts">{attempts} attempts</span>
-            </div>
-        </div>
-    );
-}
-
-// Session History Item Component
-function SessionHistoryItem({ date, score, attempts, duration }) {
-    const formattedDate = new Date(date).toLocaleDateString('en-US', {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric'
-    });
-    const scorePercent = Math.round((score || 0) * 100);
-    const scoreClass = scorePercent >= 80 ? 'excellent' : scorePercent >= 60 ? 'good' : 'needs-work';
-
-    return (
-        <div className="progress__history-item">
-            <div className="progress__history-date">
-                <Calendar size={16} />
-                <span>{formattedDate}</span>
-            </div>
-            <div className="progress__history-details">
-                <span className={`progress__history-score progress__history-score--${scoreClass}`}>
-                    {scorePercent}%
-                </span>
-                <span className="progress__history-attempts">{attempts} attempts</span>
-                {duration && (
-                    <span className="progress__history-duration">
-                        <Clock size={14} />
-                        {Math.round(duration)}m
-                    </span>
-                )}
-            </div>
-        </div>
-    );
-}
-
-// Period Selector Component
-function PeriodSelector({ value, onChange }) {
-    const periods = [
-        { key: '7', label: '7 Days' },
-        { key: '30', label: '30 Days' },
-        { key: '90', label: '90 Days' },
-    ];
-
-    return (
-        <div className="progress__period-selector">
-            {periods.map(p => (
-                <button
-                    key={p.key}
-                    className={`progress__period-btn ${value === p.key ? 'progress__period-btn--active' : ''}`}
-                    onClick={() => onChange(p.key)}
-                >
-                    {p.label}
-                </button>
-            ))}
-        </div>
-    );
-}
-
-// Custom Tooltip for Charts
-function CustomTooltip({ active, payload, label }) {
-    if (!active || !payload || !payload.length) return null;
-
-    return (
-        <div className="progress__tooltip">
-            <p className="progress__tooltip-label">{label}</p>
-            {payload.map((entry, index) => (
-                <p key={index} className="progress__tooltip-value" style={{ color: entry.color }}>
-                    {entry.name}: {entry.value}%
-                </p>
-            ))}
-        </div>
-    );
-}
 
 export function Progress() {
     const navigate = useNavigate();
@@ -236,7 +31,7 @@ export function Progress() {
     const { data: progressData, isLoading: progressLoading, error: progressError, refetch: refetchProgress } =
         useApi(ENDPOINTS.ANALYTICS.PROGRESS);
     const { data: history, isLoading: historyLoading, error: historyError, refetch: refetchHistory } =
-        useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=${period}`);
+        useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=${period}`, { deps: [period] });
     const { data: phonemeStats, isLoading: phonemesLoading, error: phonemesError, refetch: refetchPhonemes } =
         useApi(ENDPOINTS.ANALYTICS.PHONEME_STATS);
 
@@ -388,12 +183,7 @@ export function Progress() {
     };
 
     if (isLoading) {
-        return (
-            <div className="progress-loading">
-                <Spinner size="lg" />
-                <p>Loading your progress...</p>
-            </div>
-        );
+        return <ProgressSkeleton />;
     }
 
     if (error) {
@@ -423,158 +213,47 @@ export function Progress() {
     return (
         <div className="progress">
             {/* Header */}
-            <header className="progress__header">
-                <div className="progress__header-content">
-                    <h1 className="progress__title">Your Progress</h1>
-                    <p className="progress__subtitle">
-                        Track your pronunciation improvement journey
-                    </p>
-                </div>
-                {trend && (
-                    <div className={`progress__trend progress__trend--${trend.direction}`}>
-                        {trend.direction === 'up' && <TrendingUp size={20} />}
-                        {trend.direction === 'down' && <TrendingDown size={20} />}
-                        {trend.direction === 'neutral' && <Minus size={20} />}
-                        <span>
-                            {trend.direction === 'up' && `+${trend.value}% this week`}
-                            {trend.direction === 'down' && `-${trend.value}% this week`}
-                            {trend.direction === 'neutral' && 'No change this week'}
-                        </span>
-                    </div>
-                )}
-            </header>
+            <ProgressHeader trend={trend} />
 
             {/* Stats Overview Grid */}
-            <section className="progress__stats-grid">
-                <StatsCard
-                    icon={Target}
-                    label="Total Attempts"
-                    value={stats.totalAttempts}
-                    sparkData={sparklineData}
-                    color={CHART_COLORS.primary}
-                />
-                <StatsCard
-                    icon={Award}
-                    label="Average Score"
-                    value={`${Math.round(stats.averageScore * 100)}%`}
-                    sparkData={sparklineData}
-                    trend={trend?.direction === 'up' ? trend.value : trend?.direction === 'down' ? -trend.value : 0}
-                    color={CHART_COLORS.success}
-                />
-                <StatsCard
-                    icon={Clock}
-                    label="Practice Time"
-                    value={`${Math.round(stats.practiceMinutes)}m`}
-                    color={CHART_COLORS.neutral}
-                />
-                <StatsCard
-                    icon={Flame}
-                    label="Current Streak"
-                    value={`${stats.streak.current_streak} days`}
-                    color={CHART_COLORS.warning}
-                />
-            </section>
+            <StatsGrid
+                stats={stats}
+                sparklineData={sparklineData}
+                trend={trend}
+                sessionHistory={sessionHistory}
+            />
+
+            {/* Milestones & Achievements */}
+            <Card variant="elevated" padding="lg" className="progress__chart-card progress__chart-card--full">
+                <MilestonesBadges progressData={progressData} />
+            </Card>
+
 
             {/* Main Content Grid */}
             <div className="progress__main-grid">
                 {/* Score History Chart */}
                 <Card variant="elevated" padding="lg" className="progress__chart-card progress__chart-card--full">
-                    <div className="progress__chart-header">
-                        <h2 className="progress__chart-title">Score History</h2>
-                        <PeriodSelector value={period} onChange={handlePeriodChange} />
-                    </div>
-                    <div className="progress__chart">
-                        <ResponsiveContainer width="100%" height={300}>
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="scoreGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-primary)" />
-                                <XAxis
-                                    dataKey="date"
-                                    stroke="var(--text-tertiary)"
-                                    fontSize={12}
-                                    tickLine={false}
-                                />
-                                <YAxis
-                                    stroke="var(--text-tertiary)"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    domain={[0, 100]}
-                                    tickFormatter={(value) => `${value}%`}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="score"
-                                    name="Score"
-                                    stroke="#14b8a6"
-                                    strokeWidth={2}
-                                    fill="url(#scoreGradient)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
+                    <ScoreHistoryChart
+                        data={chartData}
+                        period={period}
+                        onPeriodChange={handlePeriodChange}
+                    />
                 </Card>
 
                 {/* Phoneme Mastery Section */}
                 <Card variant="elevated" padding="lg" className="progress__chart-card">
-                    <div className="progress__chart-header">
-                        <h2 className="progress__chart-title">Phoneme Mastery</h2>
-                        <span className="progress__chart-subtitle">
-                            {phonemeData.weak.length} needs work, {phonemeData.strong.length} mastered
-                        </span>
-                    </div>
-                    <div className="progress__mastery-list">
-                        {phonemeData.all.length > 0 ? (
-                            phonemeData.all.slice(0, 8).map((p, idx) => (
-                                <PhonemeMasteryBar
-                                    key={idx}
-                                    phoneme={p.phoneme}
-                                    symbol={p.symbol}
-                                    score={p.current_score || 0}
-                                    attempts={p.attempts || 0}
-                                />
-                            ))
-                        ) : (
-                            <p className="progress__no-data">No phoneme data yet. Keep practicing!</p>
-                        )}
-                    </div>
-                    {phonemeData.all.length > 8 && (
-                        <button
-                            className="progress__view-all-btn"
-                            onClick={() => navigate('/phonemes')}
-                        >
-                            View All Phonemes
-                            <ChevronRight size={16} />
-                        </button>
-                    )}
+                    <PhonemeMasterySection
+                        phonemeData={phonemeData}
+                        onViewAll={() => navigate('/phonemes')}
+                    />
                 </Card>
 
                 {/* Session History */}
                 <Card variant="elevated" padding="lg" className="progress__chart-card">
-                    <div className="progress__chart-header">
-                        <h2 className="progress__chart-title">Recent Sessions</h2>
-                        <span className="progress__chart-subtitle">Last {period} days</span>
-                    </div>
-                    <div className="progress__history-list">
-                        {sessionHistory.length > 0 ? (
-                            sessionHistory.slice(0, 7).map((session, idx) => (
-                                <SessionHistoryItem
-                                    key={idx}
-                                    date={session.date}
-                                    score={session.score}
-                                    attempts={session.attempts}
-                                    duration={session.duration}
-                                />
-                            ))
-                        ) : (
-                            <p className="progress__no-data">No sessions recorded yet.</p>
-                        )}
-                    </div>
+                    <SessionHistoryCard
+                        sessions={sessionHistory}
+                        period={period}
+                    />
                 </Card>
 
                 {/* Practice Recommendations */}
@@ -611,7 +290,10 @@ export function Progress() {
                             </>
                         ) : (
                             <div className="progress__mastery-complete">
-                                <Award size={48} className="progress__mastery-icon" />
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="progress__mastery-icon">
+                                    <circle cx="12" cy="8" r="7" />
+                                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                                </svg>
                                 <p>Great job! You're performing well across all phonemes.</p>
                                 <button
                                     className="progress__practice-btn"
