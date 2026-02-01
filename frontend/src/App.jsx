@@ -3,6 +3,7 @@
  * Router setup with lazy loading for heavy pages
  */
 
+
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
@@ -11,6 +12,8 @@ import { LoadingOverlay } from './components/Loader';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Eager loaded pages
+import Contact from './pages/Contact';
+import Pricing from './pages/Pricing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -60,12 +63,13 @@ function App() {
         <ErrorBoundary>
             <ToastContainer />
             <Routes>
-<<<<<<< HEAD
-                {/* Auth Routes */}
+                {/* --- PUBLIC AUTH ROUTES --- */}
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
 
-                {/* Landing Page */}
+                {/* --- LANDING PAGE --- */}
                 <Route
                     path="/"
                     element={
@@ -76,73 +80,49 @@ function App() {
                                 </MainLayout>
                             </Suspense>
                         </PublicRoute>
-=======
-                {/* Public routes */}
-                <Route
-                    path="/login"
-                    element={
-                        <PublicRoute>
-                            <Login />
-                        </PublicRoute>
-                    }
-                />
-                <Route
-                    path="/signup"
-                    element={
-                        <PublicRoute>
-                            <Signup />
-                        </PublicRoute>
-                    }
-                />
-                <Route
-                    path="/forgot-password"
-                    element={<ForgotPassword />}
-                />
-                <Route
-                    path="/reset-password"
-                    element={<ResetPassword />}
-                />
-
-                {/* Landing page accessible to all users */}
-                <Route
-                    path="/"
-                    element={
-                        <Suspense fallback={<LoadingOverlay message="Loading..." />}>
-                            <LandingPage />
-                        </Suspense>
->>>>>>> ba9fcc0ca181ceb55aff5404450842872885f5f9
                     }
                 />
 
-                {/* --- CORRECTED INFO ROUTES --- */}
-                {/* These now point to your real components, not the placeholder divs */}
-                <Route 
-                    path="/about" 
+                {/* --- INFO PAGES (About & Docs) --- */}
+                <Route
+                    path="/about"
                     element={
                         <MainLayout>
                             <AboutUs />
                         </MainLayout>
-                    } 
+                    }
                 />
-                <Route 
-                    path="/docs" 
+                <Route
+                    path="/docs"
                     element={
                         <MainLayout>
                             <Docs />
                         </MainLayout>
-                    } 
+                    }
+                />
+                <Route
+                    path="/pricing"
+                    element={
+                        <MainLayout>
+                            <Pricing />
+                        </MainLayout>
+                    }
                 />
 
-                {/* Protected routes */}
+                {/* --- PROTECTED DASHBOARD ROUTES --- */}
                 <Route path="/dashboard" element={<ProtectedRoute><MainLayout><Dashboard /></MainLayout></ProtectedRoute>} />
-                <Route path="/practice" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Practice /></Suspense></MainLayout></ProtectedRoute>} />
-                <Route path="/progress" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Progress /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/phonemes" element={<ProtectedRoute><MainLayout><Phonemes /></MainLayout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><MainLayout><Profile /></MainLayout></ProtectedRoute>} />
+
+                {/* Lazy Loaded Protected Routes */}
+                <Route path="/practice" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Practice /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/progress" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Progress /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminProfile /></Suspense></MainLayout></ProtectedRoute>} />
+                
 
                 {/* Catch-all redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />
+                <Route path="/contact" element={<Contact />} />
             </Routes>
         </ErrorBoundary>
     );
