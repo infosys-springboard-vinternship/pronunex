@@ -95,9 +95,19 @@ export function MistakePanel({ mistakes, transcribed, expectedText }) {
                     <ul className="mistake-panel__tips-list">
                         {feedback.tips.map((tip, idx) => {
                             // Handle both string and object tips
-                            const tipText = typeof tip === 'string'
-                                ? tip
-                                : (tip?.suggestion || tip?.text || tip?.message || tip?.expected || JSON.stringify(tip));
+                            // Handle both string and object tips safely
+                            let tipText = typeof tip === 'string' ? tip : null;
+
+                            if (!tipText && typeof tip === 'object') {
+                                const content = tip?.suggestion || tip?.text || tip?.message || tip?.expected;
+                                if (typeof content === 'object') {
+                                    tipText = content?.text || content?.message || JSON.stringify(content);
+                                } else {
+                                    tipText = content;
+                                }
+
+                                if (!tipText) tipText = JSON.stringify(tip);
+                            }
                             return <li key={idx}>{tipText}</li>;
                         })}
                     </ul>
@@ -124,6 +134,9 @@ function MistakeItem({ mistake }) {
 
     const getDescription = () => {
         if (mistake.suggestion) {
+            if (typeof mistake.suggestion === 'object') {
+                return mistake.suggestion.text || mistake.suggestion.message || JSON.stringify(mistake.suggestion);
+            }
             return mistake.suggestion;
         }
 

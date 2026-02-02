@@ -55,7 +55,14 @@ export function AIRecommendations({ assessment, currentSentence }) {
             if (typeof tip === 'string') return tip;
             if (tip && typeof tip === 'object') {
                 // Try common properties for tip text
-                return tip.suggestion || tip.text || tip.message || tip.expected || null;
+                const content = tip.suggestion || tip.text || tip.message || tip.expected;
+
+                // If the content is still an object (nested), try to extract from it or stringify
+                if (content && typeof content === 'object') {
+                    return content.text || content.message || JSON.stringify(content);
+                }
+
+                return content || null;
             }
             return null;
         };
