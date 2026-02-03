@@ -13,7 +13,7 @@ export default function Navbar() {
         { name: 'About Us', href: '/about' },
         { name: 'Pricing', href: '/pricing' }, // <--- New Link Added Here
         { name: 'Docs', href: '/docs' },
-        { name: 'Features', href: '/#features' },
+        { name: 'Features', href: '/features' }, // <--- Fixed this to point to the new page
         { name: 'How It Works', href: '/#how-it-works' },
         { name: 'Practice', href: '/practice' },
     ];

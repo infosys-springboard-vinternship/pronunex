@@ -25,6 +25,7 @@ import Docs from './pages/Docs';
 import Pricing from './pages/Pricing'; // Added this back
 import Contact from './pages/Contact'; // Added this back
 import Navbar from './components/landing/Navbar';
+import Features from './pages/Features';
 
 // Lazy loaded pages
 const Practice = lazy(() => import('./pages/Practice'));
@@ -87,17 +88,17 @@ function App() {
                     path="/about" 
                     element={
                         <MainLayout>
-                            <AboutUs />
+                            <Contact />
                         </MainLayout>
-                    } 
+                    }
                 />
-                <Route 
-                    path="/docs" 
+                <Route
+                    path="/features"
                     element={
                         <MainLayout>
-                            <Docs />
+                            <Features />
                         </MainLayout>
-                    } 
+                    }
                 />
                 <Route 
                     path="/pricing" 
