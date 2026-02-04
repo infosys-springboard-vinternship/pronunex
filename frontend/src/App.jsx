@@ -18,14 +18,17 @@ import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import Phonemes from './pages/Phonemes';
 import Profile from './pages/Profile';
+import SettingsPage from './pages/SettingsPage';
 
 // Import your NEW pages
 import AboutUs from './pages/AboutUs';
 import Docs from './pages/Docs';
 import Pricing from './pages/Pricing'; // Added this back
 import Contact from './pages/Contact'; // Added this back
-import Navbar from './components/landing/Navbar';
+import LandingNavbar from './components/landing/Navbar';
+import AuthNavbar from './components/Navbar';
 import Features from './pages/Features';
+import HowItWorks from './pages/HowItWorks';
 
 // Lazy loaded pages
 const Practice = lazy(() => import('./pages/Practice'));
@@ -47,10 +50,25 @@ function PublicRoute({ children }) {
     return children;
 }
 
+// Smart MainLayout - uses correct navbar based on auth state (for protected routes)
 function MainLayout({ children }) {
+    const { isAuthenticated } = useAuth();
+
     return (
         <div className="app-layout">
-            <Navbar />
+            {isAuthenticated ? <AuthNavbar /> : <LandingNavbar />}
+            <main className="app-main">
+                <ErrorBoundary>{children}</ErrorBoundary>
+            </main>
+        </div>
+    );
+}
+
+// PublicLayout - always uses LandingNavbar (for public pages like landing, about, pricing)
+function PublicLayout({ children }) {
+    return (
+        <div className="app-layout">
+            <LandingNavbar />
             <main className="app-main">
                 <ErrorBoundary>{children}</ErrorBoundary>
             </main>
@@ -73,55 +91,62 @@ function App() {
                 <Route
                     path="/"
                     element={
-                        <PublicRoute>
-                            <Suspense fallback={<LoadingOverlay message="Loading..." />}>
-                                <MainLayout>
-                                    <LandingPage />
-                                </MainLayout>
-                            </Suspense>
-                        </PublicRoute>
+                        <Suspense fallback={<LoadingOverlay message="Loading..." />}>
+                            <PublicLayout>
+                                <LandingPage />
+                            </PublicLayout>
+                        </Suspense>
                     }
                 />
 
                 {/* --- PUBLIC INFO PAGES --- */}
-                <Route 
-                    path="/about" 
+                <Route
+                    path="/about"
                     element={
-                        <MainLayout>
+                        <PublicLayout>
                             <Contact />
-                        </MainLayout>
+                        </PublicLayout>
                     }
                 />
                 <Route
                     path="/features"
                     element={
-                        <MainLayout>
+                        <PublicLayout>
                             <Features />
-                        </MainLayout>
+                        </PublicLayout>
                     }
                 />
-                <Route 
-                    path="/pricing" 
+                <Route
+                    path="/how-it-works"
                     element={
-                        <MainLayout>
-                            <Pricing />
-                        </MainLayout>
-                    } 
+                        <PublicLayout>
+                            <HowItWorks />
+                        </PublicLayout>
+                    }
                 />
-                <Route 
-                    path="/contact" 
+                <Route
+                    path="/pricing"
                     element={
-                        <MainLayout>
+                        <PublicLayout>
+                            <Pricing />
+                        </PublicLayout>
+                    }
+                />
+                <Route
+                    path="/contact"
+                    element={
+                        <PublicLayout>
                             <Contact />
-                        </MainLayout>
-                    } 
+                        </PublicLayout>
+                    }
                 />
 
                 {/* --- PROTECTED ROUTES --- */}
                 <Route path="/dashboard" element={<ProtectedRoute><MainLayout><Dashboard /></MainLayout></ProtectedRoute>} />
                 <Route path="/phonemes" element={<ProtectedRoute><MainLayout><Phonemes /></MainLayout></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><MainLayout><Profile /></MainLayout></ProtectedRoute>} />
-                
+                <Route path="/settings" element={<ProtectedRoute><MainLayout><SettingsPage /></MainLayout></ProtectedRoute>} />
+
                 {/* Lazy Loaded Protected Routes */}
                 <Route path="/practice" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Practice /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/progress" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Progress /></Suspense></MainLayout></ProtectedRoute>} />
