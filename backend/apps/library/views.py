@@ -21,11 +21,13 @@ class PhonemeListView(generics.ListAPIView):
     GET /api/v1/phonemes/
     
     List all English phonemes.
+    Returns all 44 phonemes without server-side pagination.
     """
     
     queryset = Phoneme.objects.all()
     serializer_class = PhonemeSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None  # Disable pagination - only 44 items
     filter_backends = [filters.SearchFilter]
     search_fields = ['arpabet', 'type', 'example_word']
 

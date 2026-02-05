@@ -52,6 +52,12 @@ class Command(BaseCommand):
             {'symbol': '/aʊ/', 'arpabet': 'AW', 'ipa': 'aʊ', 'type': 'diphthong', 'example_word': 'how', 'description': 'Low to high back diphthong'},
             {'symbol': '/ɔɪ/', 'arpabet': 'OY', 'ipa': 'ɔɪ', 'type': 'diphthong', 'example_word': 'boy', 'description': 'Mid back to high front diphthong'},
             
+            # R-colored vowels 
+            {'symbol': '/ɑr/', 'arpabet': 'AR', 'ipa': 'ɑr', 'type': 'vowel', 'example_word': 'car', 'description': 'R-colored low back vowel'},
+            {'symbol': '/ɔr/', 'arpabet': 'OR', 'ipa': 'ɔr', 'type': 'vowel', 'example_word': 'more', 'description': 'R-colored mid back vowel'},
+            {'symbol': '/ɪr/', 'arpabet': 'IXR', 'ipa': 'ɪr', 'type': 'diphthong', 'example_word': 'near', 'description': 'Centering diphthong (near)'},
+            {'symbol': '/ʊr/', 'arpabet': 'UXR', 'ipa': 'ʊr', 'type': 'diphthong', 'example_word': 'tour', 'description': 'Centering diphthong (tour)'},
+            
             # Plosives (Stops)
             {'symbol': '/p/', 'arpabet': 'P', 'ipa': 'p', 'type': 'plosive', 'example_word': 'pen', 'description': 'Voiceless bilabial plosive'},
             {'symbol': '/b/', 'arpabet': 'B', 'ipa': 'b', 'type': 'plosive', 'example_word': 'bad', 'description': 'Voiced bilabial plosive'},
@@ -103,6 +109,10 @@ class Command(BaseCommand):
             'W': 'Round lips tightly, glide to next vowel.',
             'V': 'Gently bite lower lip, blow air with voice.',
             'F': 'Same as V but without voice.',
+            'AR': 'Open mouth wide, say "ah", then curl tongue back for R.',
+            'OR': 'Round lips, tongue mid-back, add R-coloring at end.',
+            'IXR': 'Start with short "i", glide tongue back toward R position.',
+            'UXR': 'Start with short "oo", glide toward R position.',
         }
         
         created_count = 0
