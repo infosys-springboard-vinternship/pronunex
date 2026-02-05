@@ -3,8 +3,8 @@
  * Hover-glow effects with unique gradients per card
  */
 
-import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { useRef, useState } from 'react';
+import { motion, useInView, useSpring } from 'framer-motion';
 import { Focus, Route, BarChart3, LayoutDashboard } from 'lucide-react';
 import './FeatureGridSection.css';
 
@@ -60,6 +60,62 @@ const cardVariants = {
     },
 };
 
+// Component to handle individual card magnetic effect
+function MagneticFeatureCard({ feature, variants }) {
+    const cardRef = useRef(null);
+    const [isHovered, setIsHovered] = useState(false);
+
+    const mouseX = useSpring(0, { stiffness: 150, damping: 15 });
+    const mouseY = useSpring(0, { stiffness: 150, damping: 15 });
+
+    const handleMouseMove = (e) => {
+        if (!cardRef.current) return;
+        const rect = cardRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+
+        // Calculate distance from center with reduced strength
+        const deltaX = (e.clientX - centerX) * 0.08;
+        const deltaY = (e.clientY - centerY) * 0.08;
+
+        mouseX.set(deltaX);
+        mouseY.set(deltaY);
+    };
+
+    const handleMouseLeave = () => {
+        setIsHovered(false);
+        mouseX.set(0);
+        mouseY.set(0);
+    };
+
+    return (
+        <motion.article
+            ref={cardRef}
+            className={`feature-card-enterprise gradient-${feature.gradient}`}
+            variants={variants}
+            style={{ x: mouseX, y: mouseY }}
+            onMouseMove={handleMouseMove}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={handleMouseLeave}
+        >
+            <motion.div
+                className="feature-icon-wrapper-enterprise"
+                animate={isHovered ? { scale: 1.1, rotate: 5 } : { scale: 1, rotate: 0 }}
+                transition={{ duration: 0.3 }}
+            >
+                <feature.icon
+                    className="feature-icon-enterprise"
+                    aria-hidden="true"
+                />
+            </motion.div>
+            <h3 className="feature-title-enterprise">{feature.title}</h3>
+            <p className="feature-description-enterprise">{feature.description}</p>
+            <div className="feature-glow-enterprise" aria-hidden="true" />
+            <div className="feature-border-glow" aria-hidden="true" />
+        </motion.article>
+    );
+}
+
 export default function FeatureGridSection() {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: '-100px' });
@@ -87,22 +143,11 @@ export default function FeatureGridSection() {
                     animate={isInView ? 'visible' : 'hidden'}
                 >
                     {features.map((feature) => (
-                        <motion.article
+                        <MagneticFeatureCard
                             key={feature.title}
-                            className={`feature-card-enterprise gradient-${feature.gradient}`}
+                            feature={feature}
                             variants={cardVariants}
-                        >
-                            <div className="feature-icon-wrapper-enterprise">
-                                <feature.icon
-                                    className="feature-icon-enterprise"
-                                    aria-hidden="true"
-                                />
-                            </div>
-                            <h3 className="feature-title-enterprise">{feature.title}</h3>
-                            <p className="feature-description-enterprise">{feature.description}</p>
-                            <div className="feature-glow-enterprise" aria-hidden="true" />
-                            <div className="feature-border-glow" aria-hidden="true" />
-                        </motion.article>
+                        />
                     ))}
                 </motion.div>
             </div>

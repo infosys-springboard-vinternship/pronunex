@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 // Eager load - Above the fold (critical path)
 import HeroSection from '../components/landing/HeroSection';
 import SectionSkeleton from '../components/landing/SectionSkeleton';
+import { ScrollProgress } from '../components/ui/ScrollProgress';
 
 // Lazy load - Below the fold (deferred)
 const HowItWorksSection = lazy(() => import('../components/landing/HowItWorksSection'));
@@ -60,6 +61,7 @@ export default function LandingPage() {
 
     return (
         <AnimatePresence>
+            <ScrollProgress />
             <motion.div
                 className={`landing-page-enterprise ${isVisible ? 'visible' : ''}`}
                 initial={{ opacity: 0 }}

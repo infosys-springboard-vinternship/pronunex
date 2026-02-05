@@ -1,0 +1,25 @@
+/**
+ * FloatingParticles Component Styles
+ */
+
+.floating-particles {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(1px);
+    box-shadow: 0 0 10px currentColor;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .particle {
+        animation: none !important;
+    }
+}

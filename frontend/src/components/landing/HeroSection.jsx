@@ -3,8 +3,8 @@
  * Glassmorphic blobs, 3D glass mockup, progressive animations
  */
 
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
+import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { FlipText } from '../ui/FlipText';
 import { AnimatedButton } from '../ui/AnimatedButton';
+import { AnimatedCounter } from '../ui/AnimatedCounter';
+import { FloatingParticles } from '../ui/FloatingParticles';
+import { useMousePosition } from '../../hooks/useMousePosition';
 import './HeroSection.css';
 
 // Animation variants
@@ -72,6 +75,18 @@ const floatingCardVariants = {
 export default function HeroSection() {
     const [isLoaded, setIsLoaded] = useState(false);
     const { isAuthenticated } = useAuth();
+    const mockupRef = useRef(null);
+
+    // Parallax effect for blobs
+    const { scrollY } = useScroll();
+    const blob1Y = useTransform(scrollY, [0, 500], [0, -150]);
+    const blob2Y = useTransform(scrollY, [0, 500], [0, -75]);
+    const blob3Y = useTransform(scrollY, [0, 500], [0, -100]);
+
+    // 3D tilt effect for mockup
+    const { mousePosition, isHovering } = useMousePosition(mockupRef);
+    const rotateX = useSpring((mousePosition.y - 0.5) * -15, { stiffness: 150, damping: 20 });
+    const rotateY = useSpring((mousePosition.x - 0.5) * 15, { stiffness: 150, damping: 20 });
 
     useEffect(() => {
         // Trigger animations after mount
@@ -83,11 +98,13 @@ export default function HeroSection() {
         <section className="hero-section-enterprise">
             {/* Glassmorphic Blob Background */}
             <div className="hero-blobs" aria-hidden="true">
+                <FloatingParticles count={25} color="#10b981" />
                 <motion.div
                     className="hero-blob blob-1"
                     variants={blobVariants}
                     initial="hidden"
                     animate={isLoaded ? 'visible' : 'hidden'}
+                    style={{ y: blob1Y }}
                 />
                 <motion.div
                     className="hero-blob blob-2"
@@ -95,6 +112,7 @@ export default function HeroSection() {
                     initial="hidden"
                     animate={isLoaded ? 'visible' : 'hidden'}
                     transition={{ delay: 0.2 }}
+                    style={{ y: blob2Y }}
                 />
                 <motion.div
                     className="hero-blob blob-3"
@@ -102,6 +120,7 @@ export default function HeroSection() {
                     initial="hidden"
                     animate={isLoaded ? 'visible' : 'hidden'}
                     transition={{ delay: 0.4 }}
+                    style={{ y: blob3Y }}
                 />
                 <div className="hero-grid-overlay" />
             </div>
@@ -154,7 +173,9 @@ export default function HeroSection() {
 
                     <motion.div className="hero-stats-enterprise" variants={itemVariants}>
                         <div className="hero-stat-enterprise">
-                            <span className="hero-stat-value-enterprise">44+</span>
+                            <span className="hero-stat-value-enterprise">
+                                <AnimatedCounter end={44} suffix="+" />
+                            </span>
                             <span className="hero-stat-label-enterprise">Phonemes Tracked</span>
                         </div>
                         <div className="hero-stat-divider-enterprise" />
@@ -173,11 +194,17 @@ export default function HeroSection() {
                 {/* 3D Glass Mockup */}
                 <div className="hero-visual-enterprise">
                     <motion.div
+                        ref={mockupRef}
                         className="hero-mockup-3d"
                         variants={mockupVariants}
                         initial="hidden"
                         animate={isLoaded ? 'visible' : 'hidden'}
-                        style={{ perspective: '1000px' }}
+                        style={{
+                            perspective: '1000px',
+                            rotateX: isHovering ? rotateX : 0,
+                            rotateY: isHovering ? rotateY : 0,
+                            transformStyle: 'preserve-3d',
+                        }}
                     >
                         <div className="mockup-glass-card">
                             <div className="mockup-header-enterprise">
@@ -260,6 +287,6 @@ export default function HeroSection() {
                     </motion.div>
                 </div>
             </div>
-        </section>
+        </section >
     );
 }
