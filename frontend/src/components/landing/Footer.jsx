@@ -11,6 +11,7 @@ const navLinks = [
     { name: 'Practice', href: '/practice' },
     { name: 'Progress', href: '/progress' },
     { name: 'Phonemes', href: '/phonemes' },
+    { name: 'About Us', href: '/about' },
 ];
 
 export default function Footer() {

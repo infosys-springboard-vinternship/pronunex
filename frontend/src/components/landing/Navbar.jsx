@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ArrowRight, Info, DollarSign, FileText, Sparkles, Cog, Mic, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, DollarSign, FileText, Sparkles, Cog, Mic, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -13,7 +13,7 @@ export default function Navbar() {
     const { isAuthenticated } = useAuth();
 
     const navLinks = [
-        { name: 'About Us', href: '/about', icon: Info },
+        { name: 'Home', href: '/', icon: Home },
         { name: 'Pricing', href: '/pricing', icon: DollarSign },
         { name: 'Docs', href: '/docs', icon: FileText },
         { name: 'Features', href: '/features', icon: Sparkles },

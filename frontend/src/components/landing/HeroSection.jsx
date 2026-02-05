@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import {
     Mic,
     ArrowRight,
@@ -15,6 +16,8 @@ import {
     AudioWaveform,
     Zap,
 } from 'lucide-react';
+import { FlipText } from '../ui/FlipText';
+import { AnimatedButton } from '../ui/AnimatedButton';
 import './HeroSection.css';
 
 // Animation variants
@@ -68,6 +71,7 @@ const floatingCardVariants = {
 
 export default function HeroSection() {
     const [isLoaded, setIsLoaded] = useState(false);
+    const { isAuthenticated } = useAuth();
 
     useEffect(() => {
         // Trigger animations after mount
@@ -118,7 +122,9 @@ export default function HeroSection() {
                     <motion.h1 className="hero-headline-enterprise" variants={itemVariants}>
                         Master Your Spoken English with{' '}
                         <span className="hero-headline-accent-enterprise">
-                            AI-Driven Precision
+                            <FlipText duration={2.4} delay={0.2}>
+                                AI-Driven Precision
+                            </FlipText>
                         </span>
                     </motion.h1>
 
@@ -129,14 +135,21 @@ export default function HeroSection() {
                     </motion.p>
 
                     <motion.div className="hero-cta-group-enterprise" variants={itemVariants}>
-                        <Link to="/signup" className="hero-cta-primary-enterprise">
+                        <AnimatedButton to="/signup" variant="primary">
                             <span>Start Your First Assessment</span>
-                            <ArrowRight className="hero-cta-icon-enterprise" aria-hidden="true" />
-                        </Link>
-                        <Link to="/login" className="hero-cta-secondary-enterprise">
-                            <Play className="hero-cta-icon-enterprise" aria-hidden="true" />
-                            <span>Sign In</span>
-                        </Link>
+                            <ArrowRight className="animated-btn-icon" aria-hidden="true" />
+                        </AnimatedButton>
+                        {isAuthenticated ? (
+                            <Link to="/dashboard" className="hero-cta-secondary-enterprise">
+                                <Play className="hero-cta-icon-enterprise" aria-hidden="true" />
+                                <span>Go to Dashboard</span>
+                            </Link>
+                        ) : (
+                            <Link to="/login" className="hero-cta-secondary-enterprise">
+                                <Play className="hero-cta-icon-enterprise" aria-hidden="true" />
+                                <span>Sign In</span>
+                            </Link>
+                        )}
                     </motion.div>
 
                     <motion.div className="hero-stats-enterprise" variants={itemVariants}>

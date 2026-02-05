@@ -1,0 +1,153 @@
+/**
+ * FlipText Component Animations
+ * 3D flip effect with staggered character animations
+ */
+
+/* Wrapper */
+.flip-text-wrapper {
+    display: inline-block;
+    line-height: inherit;
+}
+
+.flip-word {
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.flip-whitespace,
+.flip-separator {
+    display: inline-block;
+}
+
+/* Character with flip animation */
+.flip-char {
+    display: inline-block;
+    position: relative;
+    color: inherit;
+    -webkit-text-fill-color: transparent;
+    background: inherit;
+    -webkit-background-clip: text;
+    background-clip: text;
+    height: 1.2em;
+    line-height: 1.2em;
+    vertical-align: middle;
+    animation: flip var(--flip-duration, 2.2s) var(--flip-delay, 0s) var(--flip-iteration, infinite) ease;
+}
+
+/* Front and Back faces */
+.flip-char::before,
+.flip-char::after {
+    color: #10b981;
+    -webkit-text-fill-color: #10b981;
+    content: attr(data-char);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden;
+    animation: fade var(--flip-duration, 2.2s) var(--flip-delay, 0s) var(--flip-iteration, infinite) ease;
+}
+
+/* Front Face (Initial) */
+.flip-char::after {
+    transform: translate(-50%, -50%) translateZ(0.6em);
+}
+
+/* Bottom Face (Rotates in) */
+.flip-char::before {
+    transform: translate(-50%, -50%) rotateX(-90deg) translateZ(0.6em);
+    opacity: 0;
+    --opacity: 1;
+}
+
+/* Flip Animation Keyframes */
+@keyframes flip {
+    0% {
+        transform: rotateX(0deg);
+    }
+
+    20% {
+        transform: rotateX(0deg);
+    }
+
+    40% {
+        transform: rotateX(90deg);
+    }
+
+    60% {
+        transform: rotateX(90deg);
+    }
+
+    80% {
+        transform: rotateX(0deg);
+    }
+
+    100% {
+        transform: rotateX(0deg);
+    }
+}
+
+/* Fade Animation for faces */
+@keyframes fade {
+    0% {
+        opacity: 1;
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    35% {
+        opacity: 0;
+    }
+
+    40% {
+        opacity: 0;
+    }
+
+    45% {
+        opacity: var(--opacity, 0);
+    }
+
+    60% {
+        opacity: var(--opacity, 0);
+    }
+
+    65% {
+        opacity: 0;
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .flip-char {
+        animation: none;
+        -webkit-text-fill-color: currentColor;
+    }
+
+    .flip-char::before,
+    .flip-char::after {
+        animation: none;
+    }
+
+    .flip-char::before {
+        display: none;
+    }
+
+    .flip-char::after {
+        transform: translate(-50%, -50%);
+        opacity: 1;
+    }
+}
