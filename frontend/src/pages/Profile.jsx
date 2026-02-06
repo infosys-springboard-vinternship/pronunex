@@ -14,6 +14,8 @@ import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { Card } from '../components/Card';
 import { Spinner } from '../components/Loader';
+import { AvatarSelector } from '../components/AvatarSelector';
+import { getAvatarById } from '../config/avatarConfig';
 import './Profile.css';
 
 const PROFICIENCY_OPTIONS = [
@@ -39,6 +41,7 @@ export function Profile() {
         full_name: '',
         native_language: '',
         proficiency_level: 'beginner',
+        avatar_id: 'avatar-1',
     });
 
     // Initialize form data from user
@@ -49,6 +52,7 @@ export function Profile() {
                 full_name: user.full_name || '',
                 native_language: user.native_language || '',
                 proficiency_level: user.proficiency_level || 'beginner',
+                avatar_id: user.avatar_id || 'avatar-1',
             });
         }
     }, [user]);
@@ -70,6 +74,7 @@ export function Profile() {
                 full_name: user.full_name || '',
                 native_language: user.native_language || '',
                 proficiency_level: user.proficiency_level || 'beginner',
+                avatar_id: user.avatar_id || 'avatar-1',
             });
         }
         setIsEditing(false);
@@ -111,9 +116,11 @@ export function Profile() {
             <header className="profile__header">
                 <div className="profile__header-content">
                     <div className="profile__avatar">
-                        <span className="profile__avatar-text">
-                            {(user.full_name || user.username || 'U').charAt(0).toUpperCase()}
-                        </span>
+                        <img
+                            src={getAvatarById(isEditing ? formData.avatar_id : user.avatar_id).src}
+                            alt="Profile Avatar"
+                            className="profile__avatar-image"
+                        />
                     </div>
                     <div className="profile__header-info">
                         <h1 className="profile__name">{user.full_name || user.username}</h1>
@@ -164,6 +171,16 @@ export function Profile() {
                     )}
                 </div>
             </header>
+
+            {/* Avatar Selection - Only in edit mode */}
+            {isEditing && (
+                <Card variant="elevated" padding="lg" className="profile__section profile__avatar-section">
+                    <AvatarSelector
+                        selectedId={formData.avatar_id}
+                        onSelect={(id) => setFormData((prev) => ({ ...prev, avatar_id: id }))}
+                    />
+                </Card>
+            )}
 
             <div className="profile__content">
                 {/* Personal Information */}

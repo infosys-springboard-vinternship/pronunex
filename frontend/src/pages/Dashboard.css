@@ -216,6 +216,15 @@
     text-transform: uppercase;
 }
 
+.dashboard__avatar-img {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    border: 3px solid var(--border-subtle);
+    box-shadow: var(--shadow-md);
+}
+
 .dashboard__user-info {
     display: flex;
     flex-direction: column;

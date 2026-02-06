@@ -26,6 +26,7 @@ import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import './Dashboard.css';
 import '../components/progress/MilestonesBadges.css'; // Import badge styles
+import { getAvatarById } from '../config/avatarConfig';
 
 // Progress Ring Component
 function ProgressRing({ progress, size = 100, strokeWidth = 10 }) {
@@ -526,7 +527,11 @@ export function Dashboard() {
                 <aside className="dashboard__left-column">
                     {/* Profile Card */}
                     <div className="dashboard__profile-card">
-                        <div className="dashboard__avatar">{userInitials}</div>
+                        <img
+                            src={getAvatarById(user?.avatar_id).src}
+                            alt="Profile"
+                            className="dashboard__avatar-img"
+                        />
                         <div className="dashboard__user-info">
                             <h2 className="dashboard__user-name">{userName}</h2>
                             <span className="dashboard__user-level">{userLevel}</span>

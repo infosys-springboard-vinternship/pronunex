@@ -23,6 +23,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { ENDPOINTS } from '../api/endpoints';
+import { getAvatarById } from '../config/avatarConfig';
 import './Navbar.css';
 
 const NAV_ITEMS = [
@@ -164,7 +165,11 @@ export function Navbar() {
                                     aria-expanded={isUserMenuOpen}
                                     aria-haspopup="true"
                                 >
-                                    <div className="navbar__user-avatar">{userInitial}</div>
+                                    <img
+                                        src={getAvatarById(user?.avatar_id).src}
+                                        alt="Profile"
+                                        className="navbar__user-avatar-img"
+                                    />
                                     <span className="navbar__user-name">{displayName}</span>
                                     <ChevronDown size={16} className="navbar__user-chevron" />
                                 </button>
