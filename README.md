@@ -27,7 +27,6 @@ Django REST Framework • Wav2Vec2 • librosa • PyTorch • Transformers
 React Router • Recharts • Lucide Icons
 
 ### AI & LLM
-![Google Gemini](https://img.shields.io/badge/Google_Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-000000?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMkM2LjQ4IDIgMiA2LjQ4IDIgMTJzNC40OCAxMCAxMCAxMCAxMC00LjQ4IDEwLTEwUzE3LjUyIDIgMTIgMnoiIGZpbGw9IiNmZmYiLz48L3N2Zz4=&logoColor=white)
 
 Google Gemini • Groq • Cerebras
@@ -35,6 +34,8 @@ Google Gemini • Groq • Cerebras
 ## Key Features
 
 - **Pronunciation Assessment**: Phoneme-level analysis using Wav2Vec2 embeddings and cosine similarity scoring
+- **ASR Validation**: Whisper-based speech verification before scoring (prevents "yes man" bug)
+- **Multi-level Error Detection**: Word, phoneme, and letter-level mistake identification with DTW alignment
 - **Adaptive Practice**: AI-generated sentences targeting weak phonemes
 - **Progress Tracking**: Visual dashboards showing improvement over time
 - **Personalized Feedback**: Human-readable explanations powered by LLMs
@@ -146,3 +147,4 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 **Author**: Abhishek Maurya
+>Last updated: 2026-02-07

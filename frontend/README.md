@@ -38,8 +38,11 @@ frontend/
 │   ├── components/         # Reusable UI components
 │   │   ├── Navbar.jsx      # Navigation bar
 │   │   ├── Toast.jsx       # Notification system
+│   │   ├── Modal.jsx       # Reusable modal dialogs
+│   │   ├── AvatarSelector.jsx  # Avatar selection
 │   │   ├── EmptyState.jsx  # Empty state placeholder
-│   │   ├── LoadingSpinner.jsx
+│   │   ├── ErrorState.jsx  # Error display component
+│   │   ├── Loader.jsx      # Loading spinner variants
 │   │   └── ...
 │   │
 │   ├── pages/              # Page components
@@ -49,6 +52,9 @@ frontend/
 │   │   ├── Dashboard.jsx   # Main dashboard
 │   │   ├── Practice.jsx    # Practice session
 │   │   ├── Progress.jsx    # Progress tracking
+│   │   ├── Phonemes.jsx    # Phoneme library browser
+│   │   ├── HowItWorks.jsx  # How it works guide
+│   │   ├── SettingsPage.jsx # User settings
 │   │   ├── Library.jsx     # Phoneme library
 │   │   └── Profile.jsx     # User profile
 │   │
@@ -184,11 +190,9 @@ Check if code is formatted correctly without making changes.
 
 ### Library
 
-**Library.jsx**: Browse phonemes with search and filtering
+**Phonemes.jsx**: Browse phonemes with search and filtering
 
 **PhonemeCard.jsx**: Display phoneme details and articulation tips
-
-**SentenceLibrary.jsx**: Browse reference sentences by difficulty
 
 ## Routing
 
@@ -200,8 +204,10 @@ The application uses React Router v7 with the following routes:
 - `/dashboard` - Main dashboard (protected)
 - `/practice` - Practice session (protected)
 - `/progress` - Progress tracking (protected)
-- `/library` - Phoneme library (protected)
+- `/phonemes` - Phoneme library (protected)
 - `/profile` - User profile (protected)
+- `/settings` - User settings (protected)
+- `/how-it-works` - Feature guide (public)
 - `/admin` - Admin dashboard (admin only)
 
 Protected routes redirect to login if user is not authenticated.

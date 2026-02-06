@@ -45,7 +45,14 @@ backend/
 │   ├── aligner.py               # Wav2Vec2 forced alignment
 │   ├── audio_slicer.py          # Phoneme segmentation
 │   ├── vectorizer.py            # Audio to embeddings
-│   └── scorer.py                # Cosine similarity scoring
+│   ├── scorer.py                # Cosine similarity scoring
+│   ├── asr_validator.py         # Whisper ASR validation
+│   ├── word_matcher.py          # DTW word alignment
+│   ├── word_validator.py        # Word-level validation
+│   ├── mistake_detector.py      # Multi-level error detection
+│   ├── letter_highlighter.py    # Letter-level visualization
+│   ├── per_scorer.py            # Phone Error Rate scoring
+│   └── edit_distance.py         # Levenshtein utils
 │
 ├── services/                    # Shared services
 │   └── llm_service.py           # LLM API wrapper
@@ -140,6 +147,13 @@ SCORING_CONFIG = {
 **audio_slicer.py**: Slices audio by phoneme timestamps
 **vectorizer.py**: Generates 768-dim embeddings
 **scorer.py**: Calculates cosine similarity scores
+**asr_validator.py**: Whisper transcription + hallucination detection
+**word_matcher.py**: DTW alignment for transcribed vs expected words
+**word_validator.py**: Word count/position validation
+**mistake_detector.py**: Combines ASR + phoneme scores for error detection
+**letter_highlighter.py**: Character-level error highlighting
+**per_scorer.py**: Phone Error Rate (PER) scoring
+**edit_distance.py**: Levenshtein distance calculations
 
 ### Assessment Flow
 

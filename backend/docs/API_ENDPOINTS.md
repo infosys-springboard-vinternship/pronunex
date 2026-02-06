@@ -1,6 +1,6 @@
 # Pronunex API Endpoints Summary
 
-**Total Endpoints: 20**
+**Total Endpoints: 24**
 
 Base URL: `http://localhost:8000/api/v1/`
 
@@ -22,15 +22,17 @@ Base URL: `http://localhost:8000/api/v1/`
 
 ---
 
-## Library - Phonemes & Sentences (5 endpoints)
+## Library - Phonemes & Sentences (7 endpoints)
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/phonemes/` | List all 44 English phonemes | Yes |
-| GET | `/phonemes/{id}/` | Get phoneme details (ARPAbet, IPA, tips) | Yes |
-| GET | `/sentences/` | List practice sentences | Yes |
-| GET | `/sentences/{id}/` | Get sentence with phoneme data | Yes |
-| GET | `/sentences/recommend/` | Personalized sentence recommendations | Yes |
+| GET | `/library/phonemes/` | List all 44 English phonemes | Yes |
+| GET | `/library/phonemes/{id}/` | Get phoneme details (ARPAbet, IPA, tips) | Yes |
+| GET | `/library/sentences/` | List practice sentences | Yes |
+| GET | `/library/sentences/{id}/` | Get sentence with phoneme data | Yes |
+| GET | `/library/sentences/{id}/audio/` | Get TTS audio for sentence | Yes |
+| GET | `/library/sentences/recommend/` | Personalized sentence recommendations | Yes |
+| POST | `/library/sentences/pregenerate/` | Pre-generate sentence embeddings | Yes |
 
 ---
 
@@ -38,22 +40,23 @@ Base URL: `http://localhost:8000/api/v1/`
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| GET | `/sessions/` | List user's practice sessions | Yes |
-| POST | `/sessions/` | Create new practice session | Yes |
-| GET | `/sessions/{id}/` | Get session with attempts | Yes |
-| POST | `/sessions/{id}/end/` | End session, calculate metrics | Yes |
-| GET | `/attempts/` | List user's pronunciation attempts | Yes |
-| GET | `/attempts/{id}/` | Get attempt details with errors | Yes |
-| **POST** | `/assess/` | **Core pronunciation assessment** | Yes |
+| GET | `/practice/sessions/` | List user's practice sessions | Yes |
+| POST | `/practice/sessions/` | Create new practice session | Yes |
+| GET | `/practice/sessions/{id}/` | Get session with attempts | Yes |
+| POST | `/practice/sessions/{id}/end/` | End session, calculate metrics | Yes |
+| GET | `/practice/attempts/` | List user's pronunciation attempts | Yes |
+| GET | `/practice/attempts/{id}/` | Get attempt details with errors | Yes |
+| **POST** | `/practice/assess/` | **Core pronunciation assessment** | Yes |
 
 ---
 
-## Analytics - Progress Tracking (3 endpoints)
+## Analytics - Progress Tracking (4 endpoints)
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
 | GET | `/analytics/progress/` | Progress dashboard (scores, streaks, trends) | Yes |
-| GET | `/analytics/phonemes/` | Per-phoneme analytics | Yes |
+| GET | `/analytics/phoneme-stats/` | Per-phoneme analytics | Yes |
+| GET | `/analytics/weak-phonemes/` | Get current weak phonemes | Yes |
 | GET | `/analytics/history/` | Daily progress history | Yes |
 
 ---
@@ -72,7 +75,7 @@ Authorization: Bearer <ACCESS_TOKEN>
 | Category | Count | Base Path |
 |----------|-------|-----------|
 | Authentication | 8 | `/api/v1/auth/` |
-| Library | 5 | `/api/v1/phonemes/`, `/api/v1/sentences/` |
-| Practice | 6 | `/api/v1/sessions/`, `/api/v1/attempts/`, `/api/v1/assess/` |
-| Analytics | 3 | `/api/v1/analytics/` |
-| **Total** | **20** | |
+| Library | 7 | `/api/v1/library/` |
+| Practice | 6 | `/api/v1/practice/` |
+| Analytics | 4 | `/api/v1/analytics/` |
+| **Total** | **24** | |
