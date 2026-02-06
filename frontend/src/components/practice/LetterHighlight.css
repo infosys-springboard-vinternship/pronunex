@@ -1,0 +1,181 @@
+/**
+ * LetterHighlight Component Styles
+ * Premium visual styling for letter-by-letter pronunciation feedback
+ */
+
+.letter-highlight {
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+}
+
+.letter-highlight__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    gap: 1rem;
+}
+
+.letter-highlight__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary, #64748b);
+}
+
+.letter-highlight__stats {
+    font-size: 0.75rem;
+    color: var(--text-tertiary, #94a3b8);
+}
+
+.letter-highlight__sentence {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+}
+
+/* Word container */
+.letter-highlight__word {
+    display: inline-flex;
+    align-items: baseline;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    background: var(--surface, #f8fafc);
+    transition: all 0.2s ease;
+    cursor: default;
+}
+
+.letter-highlight__word--perfect {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.letter-highlight__word--has-errors {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.letter-highlight__word:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Individual letters */
+.letter-highlight__letter {
+    display: inline-block;
+    transition: all 0.15s ease;
+}
+
+.letter-highlight__letter--correct {
+    color: var(--success, #10b981);
+}
+
+.letter-highlight__letter--incorrect {
+    color: var(--error, #ef4444);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-style: wavy;
+    text-decoration-color: var(--error, #ef4444);
+    text-underline-offset: 4px;
+}
+
+.letter-highlight__letter--incorrect[data-error-type="deletion"] {
+    text-decoration-style: dotted;
+    opacity: 0.7;
+}
+
+.letter-highlight__letter--incorrect[data-error-type="substitution"] {
+    text-decoration-style: wavy;
+}
+
+/* Accuracy badge per word */
+.letter-highlight__accuracy {
+    font-size: 0.65rem;
+    color: var(--text-tertiary, #94a3b8);
+    margin-left: 0.25rem;
+    font-weight: 500;
+}
+
+/* Summary stats */
+.letter-highlight__summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border, rgba(0, 0, 0, 0.06));
+}
+
+.letter-highlight__stat {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.letter-highlight__stat-icon {
+    flex-shrink: 0;
+}
+
+.letter-highlight__stat-icon--good {
+    color: var(--success, #10b981);
+}
+
+.letter-highlight__stat-icon--warn {
+    color: var(--warning, #f59e0b);
+}
+
+/* Compact variant for inline use */
+.letter-highlight--compact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 1rem;
+}
+
+.letter-highlight__compact-word {
+    display: inline-flex;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .letter-highlight {
+        background: rgba(30, 41, 59, 0.5);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+    
+    .letter-highlight__word {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .letter-highlight__word--perfect {
+        background: rgba(16, 185, 129, 0.15);
+    }
+    
+    .letter-highlight__word--has-errors {
+        background: rgba(239, 68, 68, 0.12);
+    }
+}
+
+/* App dark theme class support */
+[data-theme="dark"] .letter-highlight {
+    background: rgba(30, 41, 59, 0.5);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .letter-highlight__word {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .letter-highlight__word--perfect {
+    background: rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .letter-highlight__word--has-errors {
+    background: rgba(239, 68, 68, 0.12);
+}

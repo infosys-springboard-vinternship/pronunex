@@ -5,6 +5,7 @@ Pinpoints exactly WHERE user made pronunciation errors:
 - Word-level: "You said 'sell' instead of 'sells'"
 - Phoneme-level: "The 'TH' sound needs work"
 - Character-level: "Missing 's' at the end"
+- Letter-level: Shows exactly which letters were wrong (NEW)
 
 Uses LLM for generating dynamic, personalized pronunciation tips.
 """
@@ -12,6 +13,9 @@ Uses LLM for generating dynamic, personalized pronunciation tips.
 import logging
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
+
+# Import letter highlighting for character-level feedback
+from .letter_highlighter import generate_highlighted_sentence, describe_letter_errors
 
 logger = logging.getLogger(__name__)
 
@@ -55,31 +59,72 @@ class MistakeDetector:
         self,
         asr_result: Dict,  # From asr_validator
         phoneme_scores: List[Dict],  # From scorer
-        expected_text: str
+        expected_text: str,
+        word_validation: Optional[Dict] = None  # From word_validator
     ) -> Dict:
         """
-        Combine ASR word diff + phoneme scores to pinpoint all mistakes.
+        Combine word validation + phoneme scores to pinpoint all mistakes.
+        
+        Implements mentor's guidance:
+        1. Word-level validation first (missing/extra words)
+        2. Phoneme-level comparison per word
+        3. Explicit error classification (substitution/deletion/insertion)
+        4. PER-based scoring
         
         Args:
             asr_result: Result from asr_validator.validate_speech()
             phoneme_scores: List of phoneme score dicts from scorer
             expected_text: The expected sentence text
+            word_validation: Optional result from word_validator
         
         Returns:
-            Comprehensive mistake report with feedback
+            Comprehensive mistake report with PER scoring
         """
+        from .per_scorer import calculate_per, classify_phoneme_similarity, generate_per_feedback
+        
         mistakes = []
         
-        # 1. Word-level mistakes from ASR comparison
+        # 1. Word-level mistakes from validation
         word_mistakes = self._detect_word_mistakes(asr_result)
         mistakes.extend(word_mistakes)
         
-        # 2. Phoneme-level mistakes from scores
-        phoneme_mistakes = self._detect_phoneme_mistakes(phoneme_scores)
+        # 2. Phoneme-level mistakes with ERROR CLASSIFICATION
+        phoneme_mistakes, error_counts = self._detect_phoneme_mistakes_classified(phoneme_scores)
         mistakes.extend(phoneme_mistakes)
         
-        # 3. Generate user-friendly feedback (with AI tips for phonemes)
+        # 3. Calculate PER score
+        phonemes = [ps['phoneme'] for ps in phoneme_scores] if phoneme_scores else []
+        similarities = [ps['score'] for ps in phoneme_scores] if phoneme_scores else []
+        
+        per_result = calculate_per(phonemes, phonemes, similarities)
+        
+        # 4. Generate letter-level highlighting
+        letter_highlighting = self._generate_letter_highlighting(asr_result)
+        
+        # 5. Generate user-friendly feedback
         feedback = self._generate_feedback(mistakes, expected_text, phoneme_scores)
+        
+        # 6. Generate specific error messages
+        specific_errors = self._generate_specific_errors(
+            word_mistakes, 
+            phoneme_mistakes,
+            error_counts,
+            expected_text
+        )
+        
+        # 7. BLEND letter_accuracy into final adjusted_score
+        # This ensures word-level errors affect the displayed score
+        letter_accuracy = letter_highlighting.get('letter_accuracy', 100.0) if letter_highlighting else 100.0
+        per_adjusted = per_result.adjusted_score
+        
+        # Weighted blend: 40% PER (phoneme), 60% letter accuracy (word-level)
+        # This prevents 100% score when letter analysis shows errors
+        final_adjusted_score = int(0.4 * per_adjusted + 0.6 * letter_accuracy)
+        
+        # If there are word mistakes, apply additional penalty
+        if len(word_mistakes) > 0:
+            word_penalty = len(word_mistakes) * 5  # 5 points per word mistake
+            final_adjusted_score = max(0, final_adjusted_score - word_penalty)
         
         return {
             'has_mistakes': len(mistakes) > 0,
@@ -87,7 +132,27 @@ class MistakeDetector:
             'mistake_count': len(mistakes),
             'word_errors': len(word_mistakes),
             'phoneme_errors': len(phoneme_mistakes),
+            
+            # NEW: Explicit error classification
+            'error_classification': {
+                'substitutions': error_counts.get('substitution', 0),
+                'deletions': error_counts.get('deletion', 0),
+                'insertions': error_counts.get('insertion', 0),
+                'weak_phonemes': error_counts.get('weak', 0)
+            },
+            
+            # UPDATED: Use blended score
+            'per_score': per_result.per_score,
+            'adjusted_score': final_adjusted_score,  # Now blended with letter_accuracy
+            'per_adjusted_score': per_adjusted,      # Original PER-only score (for debugging)
+            'letter_accuracy': letter_accuracy,      # For transparency
+            'per_summary': per_result.summary,
+            
+            # NEW: Specific user-facing errors
+            'specific_errors': specific_errors,
+            
             'feedback': feedback,
+            'letter_highlighting': letter_highlighting,
             'summary': self._generate_summary(mistakes)
         }
     
@@ -233,6 +298,198 @@ class MistakeDetector:
         
         return mistakes
     
+    def _detect_phoneme_mistakes_classified(
+        self, 
+        phoneme_scores: List[Dict]
+    ) -> tuple:
+        """
+        Detect phoneme mistakes with EXPLICIT error classification.
+        
+        Implements mentor's guidance:
+        - >= 0.85: Correct
+        - 0.60 - 0.85: Weak (needs improvement)
+        - < 0.60: Incorrect (substitution)
+        
+        Returns:
+            Tuple of (mistakes list, error_counts dict)
+        """
+        from .per_scorer import THRESHOLDS
+        
+        mistakes = []
+        error_counts = {
+            'substitution': 0,
+            'deletion': 0,
+            'insertion': 0,
+            'weak': 0
+        }
+        
+        if not phoneme_scores or isinstance(phoneme_scores, dict):
+            return mistakes, error_counts
+        
+        for idx, ps in enumerate(phoneme_scores):
+            score = ps.get('score', 0)
+            phoneme = ps['phoneme']
+            word = ps.get('word', '')
+            
+            # Classify based on thresholds
+            if score >= THRESHOLDS['correct']:
+                # CORRECT - no mistake
+                continue
+            
+            elif score >= THRESHOLDS['weak']:
+                # WEAK - needs improvement but not wrong
+                error_counts['weak'] += 1
+                mistakes.append(Mistake(
+                    type='weak_phoneme',
+                    position=idx,
+                    expected=phoneme,
+                    actual=f"(weak: {score:.0%})",
+                    severity='minor',
+                    suggestion=f"The '{phoneme}' sound in '{word}' needs to be clearer.",
+                    phoneme=phoneme,
+                    word=word
+                ))
+            
+            else:
+                # SUBSTITUTION - wrong phoneme
+                error_counts['substitution'] += 1
+                
+                # Determine severity based on how wrong
+                if score < 0.3:
+                    severity = 'major'
+                elif score < 0.5:
+                    severity = 'moderate'
+                else:
+                    severity = 'minor'
+                
+                mistakes.append(Mistake(
+                    type='substitution',
+                    position=idx,
+                    expected=phoneme,
+                    actual=f"(wrong: {score:.0%})",
+                    severity=severity,
+                    suggestion=f"In '{word}': The '{phoneme}' sound was incorrect.",
+                    phoneme=phoneme,
+                    word=word
+                ))
+        
+        return mistakes, error_counts
+    
+    def _generate_specific_errors(
+        self,
+        word_mistakes: List[Mistake],
+        phoneme_mistakes: List[Mistake],
+        error_counts: Dict,
+        expected_text: str
+    ) -> List[str]:
+        """
+        Generate specific, user-facing error messages.
+        
+        Format: "You missed 'X' phonemes" or "You said 'X' instead of 'Y'"
+        """
+        errors = []
+        
+        # Word-level errors first (most important)
+        missing_words = [m for m in word_mistakes if m.type == 'missing_word']
+        if missing_words:
+            words = [m.word for m in missing_words]
+            if len(words) == 1:
+                errors.append(f"You missed the word '{words[0]}'.")
+            else:
+                errors.append(f"You missed {len(words)} words: {', '.join(words)}.")
+        
+        wrong_words = [m for m in word_mistakes if m.type in ['wrong_word', 'missing_sound']]
+        for m in wrong_words[:3]:  # Limit to 3
+            errors.append(m.suggestion)
+        
+        # Phoneme-level errors
+        substitutions = error_counts.get('substitution', 0)
+        if substitutions > 0:
+            if substitutions == 1:
+                # Get the specific phoneme
+                sub_mistake = next((m for m in phoneme_mistakes if m.type == 'substitution'), None)
+                if sub_mistake:
+                    errors.append(f"You mispronounced the '{sub_mistake.phoneme}' sound in '{sub_mistake.word}'.")
+            else:
+                errors.append(f"You mispronounced {substitutions} phonemes.")
+        
+        weak_count = error_counts.get('weak', 0)
+        if weak_count > 0 and len(errors) < 5:
+            if weak_count == 1:
+                weak_mistake = next((m for m in phoneme_mistakes if m.type == 'weak_phoneme'), None)
+                if weak_mistake:
+                    errors.append(f"The '{weak_mistake.phoneme}' sound needs to be clearer.")
+            else:
+                errors.append(f"{weak_count} phonemes need to be clearer.")
+        
+        return errors
+    
+    def _generate_letter_highlighting(self, asr_result: Dict) -> Dict:
+        """
+        Generate letter-level highlighting showing which letters were correct/incorrect.
+        
+        Uses DTW word alignment from asr_result if available, otherwise falls back
+        to basic word comparison.
+        
+        Args:
+            asr_result: Result from asr_validator containing word comparisons
+        
+        Returns:
+            Dict with letter highlighting data for each word
+        """
+        expected = asr_result.get('expected', '')
+        transcribed = asr_result.get('transcribed', '')
+        
+        if not expected or not transcribed:
+            return {
+                'words': [],
+                'total_letters': 0,
+                'correct_letters': 0,
+                'letter_accuracy': 0.0,
+                'errors_string': ''
+            }
+        
+        expected_words = expected.lower().split()
+        
+        # Try to use DTW comparison results if available
+        dtw_comparison = asr_result.get('dtw_comparison', [])
+        
+        if dtw_comparison:
+            # Build actual words from DTW mapping
+            actual_words = []
+            for comp in dtw_comparison:
+                if comp.get('status') != 'extra':
+                    actual_words.append(comp.get('actual', '-'))
+        else:
+            # Fallback: use transcribed words directly
+            actual_words = transcribed.lower().split()
+        
+        # Generate highlighting using the letter_highlighter module
+        try:
+            highlighting = generate_highlighted_sentence(expected_words, actual_words)
+            
+            # Add per-word error descriptions
+            for i, word_data in enumerate(highlighting.get('words', [])):
+                expected_word = word_data.get('word', '')
+                actual_word = word_data.get('actual', '')
+                if not word_data.get('is_perfect', True):
+                    word_data['error_descriptions'] = describe_letter_errors(
+                        expected_word, actual_word
+                    )
+            
+            return highlighting
+            
+        except Exception as e:
+            logger.warning(f"Letter highlighting failed: {e}")
+            return {
+                'words': [],
+                'total_letters': len(expected.replace(' ', '')),
+                'correct_letters': 0,
+                'letter_accuracy': 0.0,
+                'errors_string': '',
+                'error': str(e)
+            }
+    
     def _generate_feedback(
         self, 
         mistakes: List[Mistake], 
@@ -347,7 +604,12 @@ Return ONLY the JSON array, no other text."""
             
             if result.get('success') and result.get('content'):
                 import json
-                tips = json.loads(result['content'])
+                content = result['content']
+                # Handle both string JSON and pre-parsed list
+                if isinstance(content, str):
+                    tips = json.loads(content)
+                else:
+                    tips = content  # Already parsed by LLM service
                 if isinstance(tips, list) and len(tips) == len(weak_phonemes):
                     return tips
             

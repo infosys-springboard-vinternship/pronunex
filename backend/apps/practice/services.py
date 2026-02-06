@@ -143,6 +143,24 @@ class AssessmentService:
                     'processing_time_ms': processing_time,
                 }
             
+            # Step 2b: WORD-LEVEL VALIDATION (mentor's guidance)
+            # Check word alignment but DON'T BLOCK - continue to phoneme analysis
+            from nlp_core.word_validator import validate_word_count
+            transcribed_words = asr_result.get('transcribed', '').lower().split()
+            expected_words = sentence.text.lower().split()
+            word_validation = validate_word_count(transcribed_words, expected_words)
+            
+            # Store word validation info for later (don't block pipeline)
+            word_validation_info = {
+                'is_valid': word_validation.is_valid,
+                'total_expected': word_validation.total_expected,
+                'total_spoken': word_validation.total_spoken,
+                'missing_words': word_validation.missing_words,
+                'extra_words': word_validation.extra_words,
+                'word_alignment': word_validation.word_alignment,
+                'message': word_validation.message
+            }
+            
             # Step 3: Fetch precomputed phoneme sequence from DB
             expected_phonemes = sentence.phoneme_sequence
             alignment_map = sentence.alignment_map
@@ -217,24 +235,43 @@ class AssessmentService:
             else:
                 clarity_score = overall_score
             
+            # Use PER-based adjusted score as primary score (mentor's guidance)
+            adjusted_score = mistake_report.get('adjusted_score', int(overall_score * 100))
+            per_score = mistake_report.get('per_score', 0.0)
+            
             return {
                 'success': True,
-                'overall_score': round(overall_score, 2),
+                
+                # PRIMARY SCORES (PER-based per mentor's guidance)
+                'overall_score': adjusted_score / 100,  # Normalized 0-1
+                'adjusted_score': adjusted_score,       # 0-100 scale
+                'per_score': per_score,                 # Phone Error Rate
+                'per_summary': mistake_report.get('per_summary', ''),
+                
+                # Secondary scores
                 'fluency_score': round(fluency_score, 2) if fluency_score else round(overall_score * 0.95, 2),
                 'clarity_score': round(clarity_score, 2),
                 'phoneme_scores': phoneme_scores,
                 'weak_phonemes': weak_phonemes,
                 
-                # NEW: ASR transcription info
+                # ASR transcription info
                 'transcribed': asr_result.get('transcribed', ''),
                 'text_similarity': asr_result.get('similarity', 1.0),
                 
-                # NEW: Mistake detection with detailed feedback
+                # WORD-LEVEL VALIDATION (mentor's guidance)
+                'word_validation': word_validation_info,
+                
+                # ERROR CLASSIFICATION (mentor's guidance)
+                'error_classification': mistake_report.get('error_classification', {}),
+                'specific_errors': mistake_report.get('specific_errors', []),
+                
+                # Detailed mistake report
                 'mistakes': mistake_report,
                 'word_errors': mistake_report.get('word_errors', 0),
                 'phoneme_errors': mistake_report.get('phoneme_errors', 0),
                 'mistake_feedback': mistake_report.get('feedback', {}),
                 
+                # LLM feedback (only if no major errors)
                 'llm_feedback': llm_feedback,
                 'processing_time_ms': processing_time,
                 'cleaned_audio_path': cleaned_audio_path,

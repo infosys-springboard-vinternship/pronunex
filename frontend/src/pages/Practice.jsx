@@ -36,6 +36,7 @@ import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
 import { MistakePanel, ContentMismatchError, UnscorableError } from '../components/practice/MistakePanel';
+import { LetterHighlight } from '../components/practice/LetterHighlight';
 import './Practice.css';
 
 // Waveform Visualizer Component
@@ -874,11 +875,14 @@ export function Practice() {
                                 </div>
                             </div>
 
-                            {/* Word Heatmap */}
-                            <WordHeatmap
-                                sentence={currentSentence?.text || ''}
-                                phonemeScores={assessment.phoneme_scores}
-                            />
+
+                            {/* Letter-by-Letter Highlighting - Shows actual word/letter accuracy */}
+                            {assessment.mistakes?.letter_highlighting && (
+                                <LetterHighlight
+                                    letterHighlighting={assessment.mistakes.letter_highlighting}
+                                    showStats={true}
+                                />
+                            )}
 
 
                             {/* Weak Phonemes - Focus Areas */}

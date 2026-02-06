@@ -27,6 +27,7 @@ g2p_en==2.1.0
 transformers==4.38.2
 torch==2.2.2
 torchaudio==2.2.2
+dtwalign>=0.1.0
 
 # LLM Integration
 groq>=0.4

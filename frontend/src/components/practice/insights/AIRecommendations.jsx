@@ -46,26 +46,44 @@ export function AIRecommendations({ assessment, currentSentence }) {
         return "Good effort! Try to emphasize the stressed syllables more to improve your rhythm.";
     };
 
-    // Collect all tips from various sources
-    const getAllTips = () => {
-        const tips = [];
+    // Helper to extract tip text from object or string
+    const extractTipText = (tip) => {
+        if (typeof tip === 'string') return tip;
+        if (tip && typeof tip === 'object') {
+            // Try common properties for tip text
+            const content = tip.suggestion || tip.text || tip.message || tip.expected;
 
-        // Helper to extract tip text from object or string
-        const extractTipText = (tip) => {
-            if (typeof tip === 'string') return tip;
-            if (tip && typeof tip === 'object') {
-                // Try common properties for tip text
-                const content = tip.suggestion || tip.text || tip.message || tip.expected;
-
-                // If the content is still an object (nested), try to extract from it or stringify
-                if (content && typeof content === 'object') {
-                    return content.text || content.message || JSON.stringify(content);
-                }
-
-                return content || null;
+            // If the content is still an object (nested), try to extract from it or stringify
+            if (content && typeof content === 'object') {
+                return content.text || content.message || JSON.stringify(content);
             }
-            return null;
-        };
+
+            return content || null;
+        }
+        return null;
+    };
+
+    // Collect all tips from various sources
+    // Only show tips if they're consistent with the score (avoid contradiction)
+    const getAllTips = () => {
+        // If score is excellent (>85%), don't show "You said X instead of Y" tips
+        // as they contradict the positive feedback
+        if (assessment.overall_score >= 0.85) {
+            // Only show improvement/next-step tips, not error corrections
+            const tips = [];
+
+            // From LLM feedback - these are usually forward-looking tips
+            if (feedback.phoneme_tips && Array.isArray(feedback.phoneme_tips)) {
+                feedback.phoneme_tips.forEach(tip => {
+                    const text = extractTipText(tip);
+                    if (text) tips.push(text);
+                });
+            }
+
+            return tips.slice(0, 2); // Limit to 2 tips for high scores
+        }
+
+        const tips = [];
 
         // From LLM feedback
         if (feedback.phoneme_tips && Array.isArray(feedback.phoneme_tips)) {
