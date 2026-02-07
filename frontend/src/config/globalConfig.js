@@ -3,6 +3,8 @@
  * Centralizes all user-configurable settings.
  */
 
+
+
 export const DEFAULT_SETTINGS = {
     // Appearance
     theme: 'light', // 'light' | 'dark'
@@ -62,4 +64,80 @@ export const COLOR_PRESETS = [
 // Keys for localStorage
 export const STORAGE_KEYS = {
     SETTINGS: 'pronunex_settings_v1'
+};
+
+export const SITE_DATA = {
+    general: {
+        appName: 'Pronunex',
+        tagline: 'Master Your Spoken English with AI-Driven Precision',
+        supportEmail: 'maurya972137@gmail.com',
+        socialLinks: {
+            linkedin: 'https://www.linkedin.com/in/abhishekmaurya9118/',
+            github: 'https://github.com/Abhishek-Maurya576'
+        }
+    },
+
+    docs: {
+        sections: [
+            {
+                id: 'introduction',
+                title: 'Introduction',
+                content: `Pronunex is an advanced AI-powered speech therapy platform designed to help users master spoken English. By leveraging cutting-edge Natural Language Processing (NLP) and audio analysis, it provides real-time feedback on pronunciation, fluency, and phoneme accuracy.`
+            },
+            {
+                id: 'getting-started',
+                title: 'Getting Started',
+                content: `To get started with Pronunex:
+                1. **Sign Up**: Create an account to track your progress.
+                2. **Microphone Setup**: Ensure you have a working microphone and grant browser permissions.
+                3. **Dashboard**: Navigate to your dashboard to see your current stats and recommended exercises.`
+            },
+            {
+                id: 'how-to-use',
+                title: 'How to Use',
+                content: `Using Pronunex is simple and intuitive:
+                - **Navigate to Practice**: Select a difficulty level or specific phoneme category.
+                - **Record**: Click the microphone icon and read the displayed sentence clearly.
+                - **Analyze**: Wait for the AI to process your speech (usually takes 1-2 seconds).
+                - **Review**: Check your score, identified mistakes, and suggestions for improvement.`
+            },
+            {
+                id: 'system-flow',
+                title: 'System Flow',
+                content: 'Diagram Placeholder: User Speech -> Audio Capture -> Backend API -> Speech-to-Text -> Alignment & Scoring -> Feedback Response -> UI Display.'
+            },
+            {
+                id: 'processing-logic',
+                title: 'How Processing Works',
+                content: `Our core processing pipeline involves several steps:
+                1. **Audio Preprocessing**: Noise reduction and normalization.
+                2. **ASR (Automatic Speech Recognition)**: Converting speech to text to verify content.
+                3. **Forced Alignment**: Aligning audio segments with specific phonemes.
+                4. **Scoring Algorithm**: Comparing user phonemes with reference native speaker models to generate confidence scores.`
+            },
+            {
+                id: 'dashboard-guide',
+                title: 'Understanding the Dashboard',
+                content: `Your dashboard is your central hub for progress tracking:
+                - **Overall Score**: Your average pronunciation accuracy across all sessions.
+                - **Fluency Metric**: Measures the smoothness and pace of your speech.
+                - **Weakness Heatmap**: Visualizes specific phonemes you struggle with most.`
+            },
+            {
+                id: 'common-issues',
+                title: 'Common Issues',
+                content: `**Microphone not detected**: Ensure your browser has permission to access the microphone. check system settings.
+                **Low scores**: Try to speak in a quiet environment. Background noise can affect accuracy.`
+            },
+            {
+                id: 'faqs',
+                title: 'FAQs',
+                content: `**Q: Is Pronunex free?**
+                A: We offer a free tier with basic features and premium plans for advanced analytics.
+                
+                **Q: Can I use it on mobile?**
+                A: Yes, Pronunex is fully responsive and works on mobile browsers.`
+            }
+        ]
+    }
 };

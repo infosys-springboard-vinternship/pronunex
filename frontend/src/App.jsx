@@ -21,7 +21,7 @@ import Profile from './pages/Profile';
 import SettingsPage from './pages/SettingsPage';
 
 // Import your NEW pages
-import AboutUs from './pages/AboutUs';
+
 import Docs from './pages/Docs';
 import Pricing from './pages/Pricing'; // Added this back
 import Contact from './pages/Contact'; // Added this back
@@ -105,6 +105,14 @@ function App() {
                     element={
                         <PublicLayout>
                             <Contact />
+                        </PublicLayout>
+                    }
+                />
+                <Route
+                    path="/docs"
+                    element={
+                        <PublicLayout>
+                            <Docs />
                         </PublicLayout>
                     }
                 />

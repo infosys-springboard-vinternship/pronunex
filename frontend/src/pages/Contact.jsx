@@ -6,7 +6,7 @@ export default function Contact() {
     <div style={{ paddingTop: '100px', textAlign: 'center' }}>
       <Navbar />
       <h1>Contact Sales</h1>
-      <p>Email us at sales@pronunex.com</p>
+      <p>Coming Soon</p>
     </div>
   );
 }
