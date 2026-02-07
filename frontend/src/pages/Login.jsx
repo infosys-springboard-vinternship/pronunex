@@ -1,14 +1,15 @@
 /**
  * Login Page
- * JWT authentication form
+ * JWT authentication form with animated characters
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, LogIn, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { Spinner } from '../components/Loader';
+import { AnimatedCharacters } from '../components/auth';
 import './Auth.css';
 
 export function Login() {
@@ -23,11 +24,11 @@ export function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isTyping, setIsTyping] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-        // Clear error on change
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: null }));
         }
@@ -69,114 +70,149 @@ export function Login() {
 
     return (
         <div className="auth-page">
-            <div className="auth-container">
-                <Link to="/" className="auth-back-btn">
-                    <ArrowLeft size={18} />
-                    <span>Back</span>
+            {/* Left Panel - Animated Characters */}
+            <div className="auth-left-panel">
+                <Link to="/" className="auth-left-logo auth-logo-link">
+                    <img src="/icon.png" alt="Pronunex" />
+                    <span>Pronunex</span>
                 </Link>
 
-                <div className="auth-header">
-                    <Link to="/" className="auth-logo-link">
-                        <div className="auth-logo">
-                            <img src="/icon.png" alt="Pronunex" />
-                        </div>
-                    </Link>
-                    <h1 className="auth-title">Welcome Back</h1>
-                    <p className="auth-subtitle">Sign in to continue your practice</p>
+                <div className="auth-characters-wrapper">
+                    <AnimatedCharacters
+                        isTyping={isTyping}
+                        passwordLength={formData.password.length}
+                        showPassword={showPassword}
+                    />
                 </div>
 
-                <form className="auth-form" onSubmit={handleSubmit}>
-                    {errors.form && (
-                        <div className="auth-error" role="alert">
-                            {errors.form}
-                        </div>
-                    )}
+                {/* Decorative elements */}
+                <div className="auth-decoration auth-decoration--grid" />
+                <div className="auth-decoration auth-decoration--blur-1" />
+                <div className="auth-decoration auth-decoration--blur-2" />
+            </div>
 
-                    <div className="form-group">
-                        <label htmlFor="email" className="form-label">
-                            Email
-                        </label>
-                        <div className="input-wrapper">
-                            <Mail className="input-icon" size={18} />
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                className={`form-input ${errors.email ? 'form-input--error' : ''}`}
-                                placeholder="you@example.com"
-                                value={formData.email}
-                                onChange={handleChange}
-                                autoComplete="email"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        {errors.email && <span className="form-error">{errors.email}</span>}
+            {/* Right Panel - Login Form */}
+            <div className="auth-right-panel">
+                <div className="auth-form-wrapper">
+                    {/* Mobile Logo */}
+                    <Link to="/" className="auth-mobile-logo auth-logo-link">
+                        <img src="/icon.png" alt="Pronunex" />
+                        <span>Pronunex</span>
+                    </Link>
+
+                    {/* Back button for mobile */}
+                    <Link to="/" className="auth-back-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        <span>Back</span>
+                    </Link>
+
+                    {/* Header */}
+                    <div className="auth-header">
+                        <h1 className="auth-title">Welcome back!</h1>
+                        <p className="auth-subtitle">Please enter your details</p>
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="password" className="form-label">
-                            Password
-                        </label>
-                        <div className="input-wrapper">
-                            <Lock className="input-icon" size={18} />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                name="password"
-                                className={`form-input ${errors.password ? 'form-input--error' : ''}`}
-                                placeholder="Enter your password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                autoComplete="current-password"
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="input-action"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                        {errors.password && <span className="form-error">{errors.password}</span>}
-                    </div>
-
-                    <div className="form-options">
-                        <Link to="/forgot-password" className="auth-link auth-link--sm">
-                            Forgot Password?
-                        </Link>
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="auth-submit btn btn--primary btn--lg w-full"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <>
-                                <Spinner size="sm" />
-                                <span>Signing in...</span>
-                            </>
-                        ) : (
-                            <>
-                                <LogIn size={20} />
-                                <span>Sign In</span>
-                            </>
+                    {/* Login Form */}
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        {errors.form && (
+                            <div className="auth-error" role="alert">
+                                {errors.form}
+                            </div>
                         )}
-                    </button>
-                </form>
 
-                <div className="auth-footer">
-                    <p>
-                        Do not have an account?{' '}
-                        <Link to="/signup" className="auth-link">
-                            Sign up
-                        </Link>
-                    </p>
+                        <div className="form-group">
+                            <label htmlFor="email" className="form-label">
+                                Email
+                            </label>
+                            <div className="input-wrapper">
+                                <Mail className="input-icon" size={18} />
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    className={`form-input ${errors.email ? 'form-input--error' : ''}`}
+                                    placeholder="you@example.com"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    onFocus={() => setIsTyping(true)}
+                                    onBlur={() => setIsTyping(false)}
+                                    autoComplete="email"
+                                    disabled={isLoading}
+                                />
+                            </div>
+                            {errors.email && <span className="form-error">{errors.email}</span>}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="password" className="form-label">
+                                Password
+                            </label>
+                            <div className="input-wrapper">
+                                <Lock className="input-icon" size={18} />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
+                                    name="password"
+                                    className={`form-input ${errors.password ? 'form-input--error' : ''}`}
+                                    placeholder="Enter your password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    onFocus={() => setIsTyping(true)}
+                                    onBlur={() => setIsTyping(false)}
+                                    autoComplete="current-password"
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    className="input-action"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            {errors.password && <span className="form-error">{errors.password}</span>}
+                        </div>
+
+                        <div className="form-options">
+                            <Link to="/forgot-password" className="auth-link auth-link--sm">
+                                Forgot password?
+                            </Link>
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="auth-submit btn btn--primary btn--lg w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Spinner size="sm" />
+                                    <span>Signing in...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <LogIn size={20} />
+                                    <span>Log in</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Sign Up Link */}
+                    <div className="auth-footer">
+                        <p>
+                            Don't have an account?{' '}
+                            <Link to="/signup" className="auth-link">
+                                Sign Up
+                            </Link>
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 }
 

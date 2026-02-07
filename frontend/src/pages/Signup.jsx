@@ -1,14 +1,15 @@
 /**
  * Signup Page
- * User registration form
+ * User registration form with animated characters
  */
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, UserPlus, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { Spinner } from '../components/Loader';
+import { AnimatedCharacters, PasswordStrength } from '../components/auth';
 import './Auth.css';
 
 export function Signup() {
@@ -24,8 +25,10 @@ export function Signup() {
         password_confirm: '',
     });
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [isTyping, setIsTyping] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -73,7 +76,6 @@ export function Signup() {
             toast.success('Account created successfully!');
             navigate('/');
         } catch (error) {
-            // Parse backend validation errors
             const errorData = error.data || {};
             const newErrors = {};
 
@@ -102,163 +104,215 @@ export function Signup() {
 
     return (
         <div className="auth-page">
-            <div className="auth-container">
-                <Link to="/" className="auth-back-btn">
-                    <ArrowLeft size={18} />
-                    <span>Back</span>
+            {/* Left Panel - Animated Characters */}
+            <div className="auth-left-panel">
+                <Link to="/" className="auth-left-logo auth-logo-link">
+                    <img src="/icon.png" alt="Pronunex" />
+                    <span>Pronunex</span>
                 </Link>
 
-                <div className="auth-header">
-                    <Link to="/" className="auth-logo-link">
-                        <div className="auth-logo">
-                            <img src="/icon.png" alt="Pronunex" />
-                        </div>
-                    </Link>
-                    <h1 className="auth-title">Create Account</h1>
-                    <p className="auth-subtitle">Start improving your pronunciation today</p>
+                <div className="auth-characters-wrapper">
+                    <AnimatedCharacters
+                        isTyping={isTyping}
+                        passwordLength={formData.password.length}
+                        showPassword={showPassword}
+                        confirmPasswordLength={formData.password_confirm.length}
+                        showConfirmPassword={showConfirmPassword}
+                    />
                 </div>
 
-                <form className="auth-form" onSubmit={handleSubmit}>
-                    <div className="form-row">
+                {/* Decorative elements */}
+                <div className="auth-decoration auth-decoration--grid" />
+                <div className="auth-decoration auth-decoration--blur-1" />
+                <div className="auth-decoration auth-decoration--blur-2" />
+            </div>
+
+            {/* Right Panel - Signup Form */}
+            <div className="auth-right-panel">
+                <div className="auth-form-wrapper">
+                    {/* Mobile Logo */}
+                    <Link to="/" className="auth-mobile-logo auth-logo-link">
+                        <img src="/icon.png" alt="Pronunex" />
+                        <span>Pronunex</span>
+                    </Link>
+
+                    {/* Back button for mobile */}
+                    <Link to="/" className="auth-back-btn">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        <span>Back</span>
+                    </Link>
+
+                    {/* Header */}
+                    <div className="auth-header">
+                        <h1 className="auth-title">Create an account</h1>
+                        <p className="auth-subtitle">Please enter your details to sign up</p>
+                    </div>
+
+                    {/* Signup Form */}
+                    <form className="auth-form" onSubmit={handleSubmit}>
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="username" className="form-label">
+                                    Username
+                                </label>
+                                <div className="input-wrapper">
+                                    <User className="input-icon" size={18} />
+                                    <input
+                                        type="text"
+                                        id="username"
+                                        name="username"
+                                        className={`form-input ${errors.username ? 'form-input--error' : ''}`}
+                                        placeholder="alex"
+                                        value={formData.username}
+                                        onChange={handleChange}
+                                        onFocus={() => setIsTyping(true)}
+                                        onBlur={() => setIsTyping(false)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                                {errors.username && <span className="form-error">{errors.username}</span>}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="full_name" className="form-label">
+                                    Full Name
+                                </label>
+                                <div className="input-wrapper">
+                                    <User className="input-icon" size={18} />
+                                    <input
+                                        type="text"
+                                        id="full_name"
+                                        name="full_name"
+                                        className="form-input"
+                                        placeholder="Alex Jr"
+                                        value={formData.full_name}
+                                        onChange={handleChange}
+                                        onFocus={() => setIsTyping(true)}
+                                        onBlur={() => setIsTyping(false)}
+                                        disabled={isLoading}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="form-group">
-                            <label htmlFor="username" className="form-label">
-                                Username
+                            <label htmlFor="email" className="form-label">
+                                Email
                             </label>
                             <div className="input-wrapper">
-                                <User className="input-icon" size={18} />
+                                <Mail className="input-icon" size={18} />
                                 <input
-                                    type="text"
-                                    id="username"
-                                    name="username"
-                                    className={`form-input ${errors.username ? 'form-input--error' : ''}`}
-                                    placeholder="johndoe"
-                                    value={formData.username}
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    className={`form-input ${errors.email ? 'form-input--error' : ''}`}
+                                    placeholder="[EMAIL_ADDRESS]"
+                                    value={formData.email}
                                     onChange={handleChange}
+                                    onFocus={() => setIsTyping(true)}
+                                    onBlur={() => setIsTyping(false)}
+                                    autoComplete="email"
                                     disabled={isLoading}
                                 />
                             </div>
-                            {errors.username && <span className="form-error">{errors.username}</span>}
+                            {errors.email && <span className="form-error">{errors.email}</span>}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="full_name" className="form-label">
-                                Full Name
+                            <label htmlFor="password" className="form-label">
+                                Password
                             </label>
                             <div className="input-wrapper">
-                                <User className="input-icon" size={18} />
+                                <Lock className="input-icon" size={18} />
                                 <input
-                                    type="text"
-                                    id="full_name"
-                                    name="full_name"
-                                    className="form-input"
-                                    placeholder="John Doe"
-                                    value={formData.full_name}
+                                    type={showPassword ? 'text' : 'password'}
+                                    id="password"
+                                    name="password"
+                                    className={`form-input ${errors.password ? 'form-input--error' : ''}`}
+                                    placeholder="At least 8 characters"
+                                    value={formData.password}
                                     onChange={handleChange}
+                                    onFocus={() => setIsTyping(true)}
+                                    onBlur={() => setIsTyping(false)}
+                                    autoComplete="new-password"
                                     disabled={isLoading}
                                 />
+                                <button
+                                    type="button"
+                                    className="input-action"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
+                            <PasswordStrength password={formData.password} />
+                            {errors.password && <span className="form-error">{errors.password}</span>}
                         </div>
-                    </div>
 
-                    <div className="form-group">
-                        <label htmlFor="email" className="form-label">
-                            Email
-                        </label>
-                        <div className="input-wrapper">
-                            <Mail className="input-icon" size={18} />
-                            <input
-                                type="email"
-                                id="email"
-                                name="email"
-                                className={`form-input ${errors.email ? 'form-input--error' : ''}`}
-                                placeholder="you@example.com"
-                                value={formData.email}
-                                onChange={handleChange}
-                                autoComplete="email"
-                                disabled={isLoading}
-                            />
+                        <div className="form-group">
+                            <label htmlFor="password_confirm" className="form-label">
+                                Confirm Password
+                            </label>
+                            <div className="input-wrapper">
+                                <Lock className="input-icon" size={18} />
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    id="password_confirm"
+                                    name="password_confirm"
+                                    className={`form-input ${errors.password_confirm ? 'form-input--error' : ''}`}
+                                    placeholder="Confirm your password"
+                                    value={formData.password_confirm}
+                                    onChange={handleChange}
+                                    onFocus={() => setIsTyping(true)}
+                                    onBlur={() => setIsTyping(false)}
+                                    autoComplete="new-password"
+                                    disabled={isLoading}
+                                />
+                                <button
+                                    type="button"
+                                    className="input-action"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            {errors.password_confirm && (
+                                <span className="form-error">{errors.password_confirm}</span>
+                            )}
                         </div>
-                        {errors.email && <span className="form-error">{errors.email}</span>}
+
+                        <button
+                            type="submit"
+                            className="auth-submit btn btn--primary btn--lg w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Spinner size="sm" />
+                                    <span>Creating account...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <UserPlus size={20} />
+                                    <span>Sign Up</span>
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Login Link */}
+                    <div className="auth-footer">
+                        <p>
+                            Already have an account?{' '}
+                            <Link to="/login" className="auth-link">
+                                Log In
+                            </Link>
+                        </p>
                     </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password" className="form-label">
-                            Password
-                        </label>
-                        <div className="input-wrapper">
-                            <Lock className="input-icon" size={18} />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password"
-                                name="password"
-                                className={`form-input ${errors.password ? 'form-input--error' : ''}`}
-                                placeholder="At least 8 characters"
-                                value={formData.password}
-                                onChange={handleChange}
-                                autoComplete="new-password"
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                className="input-action"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                            >
-                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                            </button>
-                        </div>
-                        {errors.password && <span className="form-error">{errors.password}</span>}
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="password_confirm" className="form-label">
-                            Confirm Password
-                        </label>
-                        <div className="input-wrapper">
-                            <Lock className="input-icon" size={18} />
-                            <input
-                                type={showPassword ? 'text' : 'password'}
-                                id="password_confirm"
-                                name="password_confirm"
-                                className={`form-input ${errors.password_confirm ? 'form-input--error' : ''}`}
-                                placeholder="Confirm your password"
-                                value={formData.password_confirm}
-                                onChange={handleChange}
-                                autoComplete="new-password"
-                                disabled={isLoading}
-                            />
-                        </div>
-                        {errors.password_confirm && (
-                            <span className="form-error">{errors.password_confirm}</span>
-                        )}
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="auth-submit btn btn--primary btn--lg w-full"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <>
-                                <Spinner size="sm" />
-                                <span>Creating account...</span>
-                            </>
-                        ) : (
-                            <>
-                                <UserPlus size={20} />
-                                <span>Create Account</span>
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                <div className="auth-footer">
-                    <p>
-                        Already have an account?{' '}
-                        <Link to="/login" className="auth-link">
-                            Sign in
-                        </Link>
-                    </p>
                 </div>
             </div>
         </div>
