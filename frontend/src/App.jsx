@@ -202,3 +202,6 @@ function App() {
 }
 
 export default App;
+import Games from "./pages/Games";
+
+
