@@ -3,6 +3,7 @@
  * Router setup with lazy loading for heavy pages
  */
 
+
 import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';

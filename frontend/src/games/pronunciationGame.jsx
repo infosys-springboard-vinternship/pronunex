@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { gameLevels } from "./gameData";
-import GameCard from "./GameCard";
+import GameCard from "./gameCard";
 
 export default function PronunciationGame() {
   const [levelIndex, setLevelIndex] = useState(0);

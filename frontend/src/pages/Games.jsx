@@ -1,4 +1,4 @@
-import PronunciationGame from "../games/PronunciationGame";
+import PronunciationGame from "../games/pronunciationGame";
 
 export default function Games() {
   return (
