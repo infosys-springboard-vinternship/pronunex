@@ -14,6 +14,7 @@ export const ENDPOINTS = {
         LOGOUT: `${BASE_PATH}/auth/logout/`,
         REFRESH: `${BASE_PATH}/auth/token/refresh/`,
         PROFILE: `${BASE_PATH}/auth/profile/`,
+        GOOGLE: `${BASE_PATH}/auth/google/`,
         PASSWORD_RESET: `${BASE_PATH}/auth/password/reset/`,
         PASSWORD_RESET_CONFIRM: `${BASE_PATH}/auth/password/reset/confirm/`,
         PASSWORD_CHANGE: `${BASE_PATH}/auth/password/change/`,

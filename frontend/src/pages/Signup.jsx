@@ -9,12 +9,12 @@ import { Mail, Lock, User, Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { Spinner } from '../components/Loader';
-import { AnimatedCharacters, PasswordStrength } from '../components/auth';
+import { AnimatedCharacters, PasswordStrength, GoogleButton } from '../components/auth';
 import './Auth.css';
 
 export function Signup() {
     const navigate = useNavigate();
-    const { signup } = useAuth();
+    const { signup, loginWithGoogle } = useAuth();
     const { toast } = useUI();
 
     const [formData, setFormData] = useState({
@@ -27,6 +27,7 @@ export function Signup() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [isTyping, setIsTyping] = useState(false);
 
@@ -99,6 +100,17 @@ export function Signup() {
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSignup = async () => {
+        setIsGoogleLoading(true);
+        try {
+            await loginWithGoogle();
+            // Redirect happens automatically via Supabase
+        } catch (error) {
+            toast.error(error.message || 'Google signup failed');
+            setIsGoogleLoading(false);
         }
     };
 
@@ -302,6 +314,18 @@ export function Signup() {
                                 </>
                             )}
                         </button>
+
+                        {/* Divider */}
+                        <div className="auth-divider">
+                            <span>or sign up with</span>
+                        </div>
+
+                        {/* Google Sign-Up */}
+                        <GoogleButton
+                            onClick={handleGoogleSignup}
+                            isLoading={isGoogleLoading}
+                            label="Sign up with Google"
+                        />
                     </form>
 
                     {/* Login Link */}

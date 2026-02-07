@@ -7,4 +7,6 @@ export { AnimatedCharacters } from './AnimatedCharacters';
 export { EyeBall } from './EyeBall';
 export { Pupil } from './Pupil';
 export { PasswordStrength } from './PasswordStrength';
+export { GoogleButton } from './GoogleButton';
 export { CHARACTER_CONFIG, ANIMATION_CONFIG, CONTAINER_CONFIG } from './characterConfig';
+

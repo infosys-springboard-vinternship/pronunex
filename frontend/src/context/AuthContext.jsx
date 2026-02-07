@@ -7,6 +7,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
+import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -112,6 +113,55 @@ export function AuthProvider({ children }) {
     }, []);
 
     /**
+     * Login with Google via Supabase OAuth
+     */
+    const loginWithGoogle = useCallback(async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+            },
+        });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+    }, []);
+
+    /**
+     * Handle OAuth callback - exchange Supabase token for Django JWT
+     */
+    const handleOAuthCallback = useCallback(async () => {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error || !session) {
+            throw new Error(error?.message || 'No session found');
+        }
+
+        // Exchange Supabase token for Django JWT
+        const { data } = await api.post(ENDPOINTS.AUTH.GOOGLE, {
+            access_token: session.access_token,
+            provider_token: session.provider_token,
+            email: session.user.email,
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+        });
+
+        // Store Django tokens
+        const tokens = data.tokens || data;
+        sessionStorage.setItem('access_token', tokens.access);
+        sessionStorage.setItem('refresh_token', tokens.refresh);
+
+        api.setTokens(tokens.access, tokens.refresh);
+        setUser(data.user);
+        setIsAuthenticated(true);
+
+        // Sign out of Supabase (we use Django session now)
+        await supabase.auth.signOut();
+
+        return data;
+    }, []);
+
+    /**
      * Update user profile
      */
     const updateProfile = useCallback(async (profileData) => {
@@ -127,6 +177,8 @@ export function AuthProvider({ children }) {
         login,
         signup,
         logout,
+        loginWithGoogle,
+        handleOAuthCallback,
         updateProfile,
     };
 

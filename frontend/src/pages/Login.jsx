@@ -9,12 +9,12 @@ import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
 import { Spinner } from '../components/Loader';
-import { AnimatedCharacters } from '../components/auth';
+import { AnimatedCharacters, GoogleButton } from '../components/auth';
 import './Auth.css';
 
 export function Login() {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, loginWithGoogle } = useAuth();
     const { toast } = useUI();
 
     const [formData, setFormData] = useState({
@@ -23,6 +23,7 @@ export function Login() {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [isTyping, setIsTyping] = useState(false);
 
@@ -65,6 +66,17 @@ export function Login() {
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGoogleLogin = async () => {
+        setIsGoogleLoading(true);
+        try {
+            await loginWithGoogle();
+            // Redirect happens automatically via Supabase
+        } catch (error) {
+            toast.error(error.message || 'Google login failed');
+            setIsGoogleLoading(false);
         }
     };
 
@@ -199,6 +211,18 @@ export function Login() {
                                 </>
                             )}
                         </button>
+
+                        {/* Divider */}
+                        <div className="auth-divider">
+                            <span>or continue with</span>
+                        </div>
+
+                        {/* Google Sign-In */}
+                        <GoogleButton
+                            onClick={handleGoogleLogin}
+                            isLoading={isGoogleLoading}
+                            label="Continue with Google"
+                        />
                     </form>
 
                     {/* Sign Up Link */}

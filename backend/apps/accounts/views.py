@@ -28,7 +28,7 @@ from .throttling import (
     PasswordResetRateThrottle,
     SignupRateThrottle,
 )
-from .services import AuthenticationService, PasswordResetService, SupabaseEmailService
+from .services import AuthenticationService, PasswordResetService, SupabaseEmailService, GoogleAuthService
 
 logger = logging.getLogger(__name__)
 
@@ -215,3 +215,50 @@ class ChangePasswordView(APIView):
         return Response({
             'message': 'Password changed successfully.'
         }, status=status.HTTP_200_OK)
+
+
+class GoogleLoginView(APIView):
+    """
+    POST /api/v1/auth/google/
+    
+    Authenticate user via Google OAuth (Supabase).
+    Creates new user if not exists, or links to existing account.
+    """
+    
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        email = request.data.get('email')
+        name = request.data.get('name')
+        access_token = request.data.get('access_token')
+        
+        if not email:
+            return Response(
+                {'error': 'Email is required'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            google_service = GoogleAuthService()
+            user, tokens = google_service.authenticate_google_user(
+                email=email,
+                name=name,
+            )
+            
+            return Response({
+                'message': 'Google login successful.',
+                'user': UserProfileSerializer(user).data,
+                'tokens': tokens,
+            }, status=status.HTTP_200_OK)
+            
+        except ValueError as e:
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            logger.error(f"Google login error: {e}")
+            return Response(
+                {'error': 'Authentication failed'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

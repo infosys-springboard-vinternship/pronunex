@@ -1066,3 +1066,44 @@
         color: #9ca3af;
     }
 }
+
+/* ========================================
+   AUTH CALLBACK PAGE
+   ======================================== */
+
+.auth-callback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg-primary);
+}
+
+.auth-callback-content {
+    text-align: center;
+    padding: var(--space-8);
+    max-width: 400px;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.auth-callback-content h2 {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--text-xl);
+    color: var(--text-primary);
+}
+
+.auth-callback-content p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.auth-callback-error {
+    color: var(--color-error-500);
+    margin-bottom: var(--space-4);
+}
+
+.auth-callback-redirect {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    margin-top: var(--space-4);
+}
