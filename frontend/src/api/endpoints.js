@@ -4,7 +4,9 @@
  */
 
 const API_VERSION = 'v1';
-const BASE_PATH = `/api/${API_VERSION}`;
+// Use VITE_API_URL from environment, or default to relative path (for proxy)
+const API_URL = import.meta.env.VITE_API_URL || '';
+const BASE_PATH = `${API_URL}/api/${API_VERSION}`;
 
 export const ENDPOINTS = {
     // Authentication
