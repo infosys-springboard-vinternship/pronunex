@@ -72,6 +72,9 @@ class ApiClient {
     _buildHeaders(customHeaders = {}, isFormData = false) {
         const headers = { ...customHeaders };
 
+        // Bypass Ngrok browser warning page (for free tier)
+        headers['ngrok-skip-browser-warning'] = 'true';
+
         if (!isFormData) {
             headers['Content-Type'] = 'application/json';
         }
