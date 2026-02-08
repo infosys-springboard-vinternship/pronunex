@@ -8,6 +8,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { UIProvider } from './context/UIContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { GamificationProvider } from './context/GamificationContext';
 import App from './App';
 import './styles/index.css';
 
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')).render(
             <UIProvider>
                 <SettingsProvider>
                     <AuthProvider>
-                        <App />
+                        <GamificationProvider>
+                            <App />
+                        </GamificationProvider>
                     </AuthProvider>
                 </SettingsProvider>
             </UIProvider>

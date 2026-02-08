@@ -20,10 +20,15 @@ import {
     CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useGamification } from '../context/GamificationContext';
 import { useApi } from '../hooks/useApi';
 import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
+import { XPRing } from '../components/gamification/XPRing';
+import { CurrencyDisplay } from '../components/gamification/Currency';
+import { StreakCalendar } from '../components/gamification/StreakCalendar';
+import { DailyQuests } from '../components/gamification/DailyQuests';
 import './Dashboard.css';
 import '../components/progress/MilestonesBadges.css'; // Import badge styles
 import { getAvatarById } from '../config/avatarConfig';
@@ -415,6 +420,7 @@ export function Dashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const { data: progress, isLoading, error, refetch } = useApi(ENDPOINTS.ANALYTICS.PROGRESS);
+    const { gamificationData, isLoading: gamificationLoading } = useGamification();
 
     // Calculate milestones directly from progress data
     const milestones = useMemo(() => {
@@ -537,12 +543,28 @@ export function Dashboard() {
                             <span className="dashboard__user-level">{userLevel}</span>
                         </div>
 
-                        {/* Daily Goal */}
+                        {/* XP Ring & Currency */}
                         <div className="dashboard__daily-goal">
-                            <ProgressRing progress={normalizedStats.daily_goal_progress} />
-                            <span className="dashboard__goal-label">Daily Goal Progress</span>
+                            {gamificationData?.xp && (
+                                <XPRing xpData={gamificationData.xp} size={120} />
+                            )}
+                            {gamificationData?.gems && gamificationData?.hearts && (
+                                <CurrencyDisplay 
+                                    gems={gamificationData.gems.available_gems}
+                                    hearts={gamificationData.hearts.current_hearts}
+                                    maxHearts={5}
+                                    showLabels={true}
+                                />
+                            )}
                         </div>
                     </div>
+
+                    {/* Streak Calendar */}
+                    {gamificationData?.streak && (
+                        <div className="dashboard__streak-widget">
+                            <StreakCalendar streakData={gamificationData.streak} />
+                        </div>
+                    )}
 
                     {/* Achievements */}
                     <div className="dashboard__achievements">
@@ -678,6 +700,13 @@ export function Dashboard() {
                             </Link>
                         </div>
                     </div>
+
+                    {/* Daily Quests */}
+                    {gamificationData?.daily_quests && (
+                        <div className="dashboard__daily-quests-widget">
+                            <DailyQuests quests={gamificationData.daily_quests} />
+                        </div>
+                    )}
 
                     {/* Words to Review */}
                     <div className="dashboard__words-review">

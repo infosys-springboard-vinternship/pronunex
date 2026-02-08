@@ -11,6 +11,9 @@ from .views import (
     RecommendedSentencesView,
     SentenceAudioView,
     SentencePreGenerateView,
+    LearningPathListView,
+    LearningPathDetailView,
+    LearningPathUnitsView,
 )
 
 urlpatterns = [
@@ -24,6 +27,11 @@ urlpatterns = [
     path('sentences/<int:pk>/audio/', SentenceAudioView.as_view(), name='sentence_audio'),
     path('sentences/recommend/', RecommendedSentencesView.as_view(), name='sentence_recommend'),
     path('sentences/pregenerate/', SentencePreGenerateView.as_view(), name='sentence_pregenerate'),
+    
+    # Learning Paths (Skill Tree)
+    path('learning-paths/', LearningPathListView.as_view(), name='learning_path_list'),
+    path('learning-paths/<int:pk>/', LearningPathDetailView.as_view(), name='learning_path_detail'),
+    path('learning-paths/<int:pk>/units/', LearningPathUnitsView.as_view(), name='learning_path_units'),
 ]
 
 

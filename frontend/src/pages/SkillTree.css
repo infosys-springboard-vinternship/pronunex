@@ -1,0 +1,400 @@
+/* ============================================
+   SKILL TREE / LEARNING PATH PAGE
+   Theme-aware Duolingo-style progression UI
+   ============================================ */
+
+.skill-tree {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.skill-tree__loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.skill-tree__header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.skill-tree__title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.skill-tree__subtitle {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+}
+
+/* ----------------------------------------
+   Learning Path Cards
+   ---------------------------------------- */
+
+.skill-tree__paths {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.path-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--surface-primary);
+    border: 2px solid var(--border-primary);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.path-card:hover {
+    transform: translateY(-2px);
+    background: var(--surface-hover);
+    box-shadow: var(--shadow-md);
+}
+
+.path-card--selected {
+    border-color: var(--color-primary-500);
+    background: var(--surface-elevated);
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.2);
+}
+
+.path-card__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.path-card__content {
+    flex: 1;
+}
+
+.path-card__name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.path-card__difficulty {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    text-transform: capitalize;
+}
+
+.path-card__check {
+    color: var(--color-primary-500);
+    flex-shrink: 0;
+}
+
+/* ----------------------------------------
+   Path Info Section
+   ---------------------------------------- */
+
+.skill-tree__content {
+    animation: fadeIn 0.3s ease;
+}
+
+.skill-tree__path-info {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+}
+
+.skill-tree__path-info h2 {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.skill-tree__path-info p {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+}
+
+/* ----------------------------------------
+   Unit Cards
+   ---------------------------------------- */
+
+.skill-tree__units {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.unit-card {
+    background: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.unit-card:hover:not(.unit-card--locked) {
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-secondary);
+}
+
+.unit-card--locked {
+    opacity: 0.6;
+}
+
+.unit-card__header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: inherit;
+}
+
+.unit-card--locked .unit-card__header {
+    cursor: not-allowed;
+}
+
+.unit-card__number {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--color-primary-500);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.unit-card--locked .unit-card__number {
+    background: var(--text-tertiary);
+}
+
+.unit-card__info {
+    flex: 1;
+}
+
+.unit-card__name {
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.unit-card__lock {
+    color: var(--text-tertiary);
+}
+
+.unit-card__description {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+/* Progress Bar */
+.unit-card__progress {
+    margin-top: 1rem;
+}
+
+.unit-card__progress-bar {
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.unit-card__progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-primary-500), var(--color-success-500));
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+
+.unit-card__progress-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.unit-card__chevron {
+    color: var(--text-tertiary);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.unit-card__chevron--expanded {
+    transform: rotate(90deg);
+}
+
+/* ----------------------------------------
+   Phoneme Items
+   ---------------------------------------- */
+
+.unit-card__phonemes {
+    padding: 0 1.5rem 1.5rem;
+    border-top: 1px solid var(--border-primary);
+    animation: slideDown 0.3s ease;
+}
+
+.phoneme-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    margin-top: 0.75rem;
+    transition: all 0.2s ease;
+}
+
+.phoneme-item:hover:not(.phoneme-item--locked) {
+    background: var(--surface-hover);
+    transform: translateX(4px);
+    border-color: var(--border-secondary);
+}
+
+.phoneme-item--locked {
+    opacity: 0.5;
+}
+
+.phoneme-item__symbol {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--color-primary-500);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.phoneme-item--locked .phoneme-item__symbol {
+    background: var(--text-tertiary);
+}
+
+.phoneme-item__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.phoneme-item__arpabet {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.phoneme-item__example {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.phoneme-item__crowns {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.phoneme-item__crown {
+    color: var(--text-tertiary);
+    transition: all 0.2s ease;
+}
+
+.phoneme-item__crown--earned {
+    color: #fbbf24;
+}
+
+.phoneme-item__legendary {
+    color: #a855f7;
+    margin-left: 0.5rem;
+}
+
+/* ----------------------------------------
+   Animations
+   ---------------------------------------- */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+/* ----------------------------------------
+   Responsive Design
+   ---------------------------------------- */
+
+@media (max-width: 768px) {
+    .skill-tree {
+        padding: 1rem;
+    }
+
+    .skill-tree__title {
+        font-size: 2rem;
+    }
+
+    .skill-tree__paths {
+        grid-template-columns: 1fr;
+    }
+
+    .unit-card__header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .phoneme-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .phoneme-item__crowns {
+        align-self: flex-end;
+    }
+}

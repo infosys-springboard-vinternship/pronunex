@@ -34,6 +34,11 @@ export const ENDPOINTS = {
         RECOMMEND: `${BASE_PATH}/library/sentences/recommend/`,
         PREGENERATE: `${BASE_PATH}/library/sentences/pregenerate/`,
     },
+    LEARNING_PATHS: {
+        LIST: `${BASE_PATH}/library/learning-paths/`,
+        DETAIL: (id) => `${BASE_PATH}/library/learning-paths/${id}/`,
+        UNITS: (id) => `${BASE_PATH}/library/learning-paths/${id}/units/`,
+    },
 
     // Practice
     SESSIONS: {
@@ -54,6 +59,27 @@ export const ENDPOINTS = {
         PHONEME_STATS: `${BASE_PATH}/analytics/phoneme-stats/`,
         WEAK_PHONEMES: `${BASE_PATH}/analytics/weak-phonemes/`,
         HISTORY: `${BASE_PATH}/analytics/history/`,
+    },
+
+    // Gamification
+    GAMIFICATION: {
+        DASHBOARD: `${BASE_PATH}/gamification/dashboard/`,
+        XP: `${BASE_PATH}/gamification/xp/`,
+        SET_XP_GOAL: `${BASE_PATH}/gamification/xp/set-goal/`,
+        QUESTS: `${BASE_PATH}/gamification/quests/`,
+        ACHIEVEMENTS: `${BASE_PATH}/gamification/achievements/`,
+        ACHIEVEMENTS_UNLOCKED: `${BASE_PATH}/gamification/achievements/unlocked/`,
+        GEMS: `${BASE_PATH}/gamification/gems/`,
+        HEARTS: `${BASE_PATH}/gamification/hearts/`,
+        HEARTS_REFILL: `${BASE_PATH}/gamification/hearts/refill/`,
+        LEADERBOARD: `${BASE_PATH}/gamification/leaderboard/`,
+        LEADERBOARD_FRIENDS: `${BASE_PATH}/gamification/leaderboard/friends/`,
+        FRIENDS: `${BASE_PATH}/gamification/friends/`,
+        FRIEND_REQUEST: `${BASE_PATH}/gamification/friends/request/`,
+        FRIEND_ACCEPT: (id) => `${BASE_PATH}/gamification/friends/${id}/accept/`,
+        FRIEND_REJECT: (id) => `${BASE_PATH}/gamification/friends/${id}/reject/`,
+        FRIEND_DELETE: (id) => `${BASE_PATH}/gamification/friends/${id}/`,
+        STREAK_FREEZE: `${BASE_PATH}/gamification/streak/freeze/`,
     },
 };
 

@@ -1,0 +1,191 @@
+/* ============================================
+   DAILY QUESTS - Theme-aware Styles
+   ============================================ */
+
+.daily-quests {
+    background: var(--surface-primary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.daily-quests__title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 16px 0;
+}
+
+.daily-quests__empty {
+    padding: 24px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.daily-quests__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quest-item {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.quest-item:hover {
+    border-color: var(--border-secondary);
+    background: var(--surface-hover);
+}
+
+.quest-item--completed {
+    background: rgba(5, 150, 105, 0.1);
+    border-color: #059669;
+}
+
+.quest-item__icon {
+    flex-shrink: 0;
+}
+
+.quest-item__check {
+    color: #059669;
+}
+
+.quest-item__circle {
+    color: var(--text-tertiary);
+}
+
+.quest-item__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.quest-item__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+}
+
+.quest-item__title {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9375rem;
+}
+
+.quest-item__rewards {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #d97706;
+    white-space: nowrap;
+}
+
+.quest-item__description {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin: 0 0 8px 0;
+}
+
+.quest-item__progress {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.quest-item__progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.quest-item__progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #d97706, #f59e0b);
+    border-radius: 999px;
+    transition: width 0.3s ease-in-out;
+}
+
+.quest-item__progress-text {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* ============================================
+   Compact Variant
+   ============================================ */
+
+.compact-quests {
+    padding: 12px 16px;
+    background: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.compact-quests__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.compact-quests__title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.compact-quests__count {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #d97706;
+}
+
+.compact-quests__bars {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.compact-quests__bar {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.compact-quests__bar--completed {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+.compact-quests__bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #059669, #10b981);
+    border-radius: 999px;
+    transition: width 0.3s ease-in-out;
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .quest-item--completed {
+    background: rgba(5, 150, 105, 0.15);
+}
+
+[data-theme='dark'] .quest-item__rewards {
+    color: #fbbf24;
+}
+
+[data-theme='dark'] .compact-quests__count {
+    color: #fbbf24;
+}

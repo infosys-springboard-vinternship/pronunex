@@ -36,6 +36,7 @@ const Practice = lazy(() => import('./pages/Practice'));
 const Progress = lazy(() => import('./pages/Progress'));
 const AdminProfile = lazy(() => import('./pages/AdminProfile'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
+const SkillTree = lazy(() => import('./pages/SkillTree'));
 
 function ProtectedRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth();
@@ -160,6 +161,7 @@ function App() {
                 {/* Lazy Loaded Protected Routes */}
                 <Route path="/practice" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Practice /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/progress" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Progress /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/skill-tree" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><SkillTree /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminProfile /></Suspense></MainLayout></ProtectedRoute>} />
 
                 {/* Catch-all redirect */}

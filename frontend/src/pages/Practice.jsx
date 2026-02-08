@@ -26,12 +26,16 @@ import {
 } from 'lucide-react';
 import { useApi, useMutation } from '../hooks/useApi';
 import { useUI } from '../context/UIContext';
+import { useGamification } from '../context/GamificationContext';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter } from '../components/practice';
+import { CurrencyDisplay } from '../components/gamification/Currency';
+import { CelebrationModal } from '../components/gamification/CelebrationModal';
+import { RewardPopup, FloatingRewardsContainer, LevelUpModal } from '../components/gamification';
+import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelStrip } from '../components/practice';
 import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
@@ -236,6 +240,11 @@ export function Practice() {
     const [audioStream, setAudioStream] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [assessmentError, setAssessmentError] = useState(null); // For content_mismatch/unscorable errors
+
+    // Gamification rewards state
+    const [practiceRewards, setPracticeRewards] = useState(null);
+    const [showLevelUp, setShowLevelUp] = useState(false);
+    const [newLevel, setNewLevel] = useState(1);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -468,6 +477,20 @@ export function Practice() {
 
             // Success - set assessment data
             setAssessment(data);
+
+            // Show gamification rewards
+            if (data.rewards) {
+                setPracticeRewards(data.rewards);
+
+                // Show level up modal if leveled up
+                if (data.rewards.level_up) {
+                    setTimeout(() => {
+                        setNewLevel(data.rewards.new_level);
+                        setShowLevelUp(true);
+                    }, 1500);
+                }
+            }
+
             toast.success('Assessment complete!');
         } catch (err) {
             // Network or server error
@@ -649,13 +672,10 @@ export function Practice() {
             {/* Progress Header with Difficulty Badge */}
             <header className="practice__progress-header">
                 <div className="practice__progress-info">
-                    <h1 className="practice__title">Practice Session</h1>
+                    <h1 className="practice__title">Pronunciation Quest</h1>
                     <span className="practice__progress-text">
-                        {currentIndex + 1} of {sentences.length}
+                        Level {currentIndex + 1} / {sentences.length}
                     </span>
-                    {currentSentence?.difficulty_level && (
-                        <DifficultyBadge level={currentSentence.difficulty_level} />
-                    )}
                     {currentIndex > 0 && (
                         <button
                             type="button"
@@ -675,6 +695,25 @@ export function Practice() {
                     />
                 </div>
             </header>
+            {/* Compact Level Strip */}
+            <section className="practice__level-strip">
+                <LevelStrip
+                    levels={sentences.map((s, i) => ({
+                        id: s.id || i + 1,
+                        order: i + 1,
+                        stars: 0
+                    }))}
+                    currentLevel={currentIndex + 1}
+                    userProgress={{}}
+                    onSelectLevel={(level) => {
+                        setCurrentIndex(level.order - 1);
+                        setAssessment(null);
+                        setAssessmentError(null);
+                        cancelRecording();
+                    }}
+                    pathName={currentSentence?.difficulty_level || 'Practice'}
+                />
+            </section>
 
             {/* Main Two-Column Layout */}
             <main className="practice__main">
@@ -1003,6 +1042,27 @@ export function Practice() {
                     <ChevronRight size={20} />
                 </button>
             </footer>
+
+            {/* Gamification Reward Animations */}
+            {practiceRewards && (
+                <>
+                    <FloatingRewardsContainer
+                        rewards={practiceRewards}
+                        position="center"
+                    />
+                    <RewardPopup
+                        rewards={practiceRewards}
+                        onClose={() => setPracticeRewards(null)}
+                    />
+                </>
+            )}
+
+            {/* Level Up Celebration Modal */}
+            <LevelUpModal
+                level={newLevel}
+                isOpen={showLevelUp}
+                onClose={() => setShowLevelUp(false)}
+            />
         </div>
     );
 }

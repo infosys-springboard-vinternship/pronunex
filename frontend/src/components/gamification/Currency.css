@@ -1,0 +1,99 @@
+.currency-display {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.currency-display__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.currency-display__item--gems {
+    background: #ddd6fe;
+    color: #5b21b6;
+}
+
+.currency-display__item--hearts {
+    background: #fecdd3;
+    color: #be123c;
+}
+
+.currency-display__icon {
+    flex-shrink: 0;
+}
+
+.currency-display__value {
+    font-size: 0.9375rem;
+}
+
+.currency-display__label {
+    font-size: 0.8125rem;
+    margin-left: 2px;
+}
+
+.gems-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #ddd6fe;
+    color: #5b21b6;
+    border-radius: 999px;
+    font-weight: 700;
+}
+
+.gems-counter--small {
+    padding: 4px 8px;
+    font-size: 0.8125rem;
+}
+
+.gems-counter--small .gems-counter__icon {
+    width: 14px;
+    height: 14px;
+}
+
+.gems-counter--medium {
+    padding: 6px 12px;
+    font-size: 0.9375rem;
+}
+
+.gems-counter--large {
+    padding: 8px 16px;
+    font-size: 1.125rem;
+}
+
+.gems-counter__icon {
+    flex-shrink: 0;
+}
+
+.hearts-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.hearts-display--small {
+    gap: 2px;
+}
+
+.hearts-display--large {
+    gap: 6px;
+}
+
+.hearts-display__heart {
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.hearts-display__heart--full {
+    color: #e11d48;
+}
+
+.hearts-display__heart--empty {
+    color: #d1d5db;
+}

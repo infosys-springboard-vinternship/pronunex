@@ -222,6 +222,12 @@ class AssessmentView(APIView):
         analytics_service = AnalyticsService()
         analytics_service.update_after_attempt(request.user, attempt)
         
+        # Process gamification rewards (XP, gems, quests, achievements)
+        from apps.analytics.services import GamificationService
+        gamification_service = GamificationService()
+        rewards = gamification_service.process_practice_rewards(request.user, attempt)
+        gamification_service.update_streak(request.user)
+        
         logger.info(f"Assessment completed for user {request.user.email}: score {result['overall_score']}")
         
         response_data = {
@@ -235,6 +241,7 @@ class AssessmentView(APIView):
             'transcribed': result.get('transcribed'),
             'processing_time_ms': result['processing_time_ms'],
             'attempt_id': attempt.id,
+            'rewards': rewards,
         }
         
         return Response(response_data, status=status.HTTP_200_OK)

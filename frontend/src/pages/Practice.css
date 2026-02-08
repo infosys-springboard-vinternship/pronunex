@@ -971,3 +971,57 @@
 [data-theme='dark'] .practice__weak-phoneme-score {
     color: #fca5a5;
 }
+
+/* ============================================
+   Level Map Section (Candy Crush Style)
+   ============================================ */
+.practice__level-map-section {
+    padding: var(--space-4) var(--space-6);
+    z-index: 1;
+}
+
+.practice__level-map-section .candy-map {
+    max-height: 400px;
+    min-height: 350px;
+}
+
+@media (min-width: 1024px) {
+    .practice__level-map-section {
+        padding: var(--space-4) var(--space-8);
+    }
+
+    .practice__level-map-section .candy-map {
+        max-height: 450px;
+    }
+}
+
+/* Collapsed state for when practicing */
+.practice__level-map-section--collapsed .candy-map {
+    max-height: 100px;
+    overflow: hidden;
+}
+
+.practice__level-map-section--collapsed .candy-map::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: linear-gradient(transparent, var(--bg-primary));
+    pointer-events: none;
+}
+
+/* ============================================
+   Compact Level Strip Section
+   ============================================ */
+.practice__level-strip {
+    padding: var(--space-3) var(--space-6);
+    z-index: 1;
+}
+
+@media (min-width: 1024px) {
+    .practice__level-strip {
+        padding: var(--space-3) var(--space-8);
+    }
+}

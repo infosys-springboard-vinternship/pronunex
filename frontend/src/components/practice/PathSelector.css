@@ -1,0 +1,165 @@
+/* ============================================
+   PATH SELECTOR - Difficulty Track Cards
+   ============================================ */
+
+.path-selector {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.path-selector--loading {
+    display: flex;
+    gap: 16px;
+}
+
+.path-selector__skeleton {
+    flex: 1;
+    min-width: 200px;
+    height: 100px;
+    background: var(--surface-secondary);
+    border-radius: 16px;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Path Card */
+.path-card {
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--surface-primary);
+    border: 2px solid var(--border-primary);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+}
+
+.path-card:hover:not(:disabled) {
+    border-color: var(--path-color, var(--accent-primary));
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.path-card--selected {
+    border-color: var(--path-color, var(--accent-primary));
+    background: linear-gradient(135deg,
+            var(--surface-primary) 0%,
+            color-mix(in srgb, var(--path-color) 10%, var(--surface-primary)) 100%);
+}
+
+.path-card--locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.path-card--locked:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Icon */
+.path-card__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--path-color, var(--accent-primary)), color-mix(in srgb, var(--path-color) 80%, black));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+}
+
+.path-card--locked .path-card__icon {
+    background: var(--surface-tertiary);
+    color: var(--text-tertiary);
+}
+
+/* Content */
+.path-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.path-card__name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 4px;
+}
+
+.path-card__description {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+/* Progress Bar */
+.path-card__progress {
+    height: 4px;
+    background: var(--surface-tertiary);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.path-card__progress-fill {
+    height: 100%;
+    background: var(--path-color, var(--accent-primary));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+}
+
+/* Check Mark */
+.path-card__check {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    color: var(--path-color, var(--accent-primary));
+}
+
+/* Unlock Hint */
+.path-card__unlock-hint {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    font-size: 0.625rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .path-selector {
+        flex-direction: column;
+    }
+
+    .path-card {
+        min-width: 100%;
+    }
+}

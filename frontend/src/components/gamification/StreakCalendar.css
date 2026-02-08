@@ -1,0 +1,126 @@
+/* ============================================
+   STREAK CALENDAR - Theme-aware Styles
+   ============================================ */
+
+.streak-calendar {
+    background: var(--surface-primary);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.streak-calendar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.streak-calendar__stat {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.streak-calendar__flame {
+    color: #f97316;
+}
+
+.streak-calendar__number {
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+
+.streak-calendar__label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.streak-calendar__freeze {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: var(--bg-tertiary);
+    border-radius: 999px;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.streak-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(10, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.streak-calendar__day {
+    aspect-ratio: 1;
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.streak-calendar__day--active {
+    background: #059669;
+}
+
+.streak-calendar__day--today {
+    border: 2px solid #f97316;
+}
+
+.streak-calendar__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+}
+
+.streak-calendar__footer {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.compact-streak {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 999px;
+}
+
+.compact-streak__flame {
+    color: #f97316;
+}
+
+.compact-streak__number {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.compact-streak__label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Dark Mode Overrides */
+[data-theme='dark'] .streak-calendar__freeze {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+[data-theme='dark'] .compact-streak {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: rgba(249, 115, 22, 0.25);
+}

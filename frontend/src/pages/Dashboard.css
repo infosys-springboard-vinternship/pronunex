@@ -471,7 +471,7 @@
 
 /* AI Insight Card - Differentiated Style */
 .dashboard__ai-insight {
-    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-4);
     border: 1px solid rgba(4, 120, 87, 0.15);
@@ -853,4 +853,26 @@
 
 [data-theme='dark'] .dashboard__action-icon--info {
     background: rgba(59, 130, 246, 0.15);
+}
+
+[data-theme='dark'] .dashboard__ai-insight {
+    background: linear-gradient(135deg, rgba(4, 120, 87, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+[data-theme='dark'] .dashboard__ai-label {
+    color: #34d399;
+}
+
+[data-theme='dark'] .dashboard__ai-text {
+    color: #a7f3d0;
+}
+
+/* Gamification Widgets */
+.dashboard__streak-widget {
+    margin-top: 1.5rem;
+}
+
+.dashboard__daily-quests-widget {
+    margin-top: 1.5rem;
 }

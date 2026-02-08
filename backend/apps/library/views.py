@@ -8,11 +8,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import Phoneme, ReferenceSentence
+from .models import Phoneme, ReferenceSentence, LearningPath, PhonemeUnit
 from .serializers import (
     PhonemeSerializer,
     ReferenceSentenceListSerializer,
     ReferenceSentenceDetailSerializer,
+    LearningPathSerializer,
+    PhonemeUnitSerializer,
 )
 
 
@@ -261,4 +263,65 @@ class SentencePreGenerateView(APIView):
             'skipped': skipped,
             'errors': errors,
         })
+
+
+class LearningPathListView(generics.ListAPIView):
+    """
+    GET /api/v1/library/learning-paths/
+    
+    List all learning paths with user progress.
+    """
+    
+    queryset = LearningPath.objects.filter(is_active=True)
+    serializer_class = LearningPathSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
+
+class LearningPathDetailView(generics.RetrieveAPIView):
+    """
+    GET /api/v1/library/learning-paths/{id}/
+    
+    Get learning path details.
+    """
+    
+    queryset = LearningPath.objects.filter(is_active=True)
+    serializer_class = LearningPathSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['user'] = self.request.user
+        return context
+
+
+class LearningPathUnitsView(APIView):
+    """
+    GET /api/v1/library/learning-paths/{id}/units/
+    
+    Get units for a specific learning path with phonemes and user progress.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        try:
+            learning_path = LearningPath.objects.get(pk=pk, is_active=True)
+        except LearningPath.DoesNotExist:
+            return Response({'error': 'Learning path not found'}, status=404)
+        
+        units = PhonemeUnit.objects.filter(learning_path=learning_path)
+        serializer = PhonemeUnitSerializer(
+            units,
+            many=True,
+            context={'user': request.user}
+        )
+        
+        return Response(serializer.data)
+
 

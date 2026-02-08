@@ -1,0 +1,267 @@
+.celebration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.celebration-modal--visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.celebration-modal__overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+}
+
+.celebration-modal__content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    padding: 48px 32px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: celebrationBounce 0.5s ease-out;
+}
+
+@keyframes celebrationBounce {
+    0% {
+        transform: scale(0.5) translateY(-100px);
+        opacity: 0;
+    }
+    60% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.celebration-modal__icon {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border-radius: 50%;
+    color: white;
+    animation: iconPulse 1s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.celebration-modal__title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 12px 0;
+}
+
+.celebration-modal__message {
+    font-size: 1.125rem;
+    color: #6b7280;
+    margin: 0 0 24px 0;
+}
+
+.celebration-modal__rewards {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.celebration-modal__reward {
+    padding: 8px 16px;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.celebration-modal__reward--gems {
+    background: #ddd6fe;
+    color: #5b21b6;
+}
+
+.celebration-modal__confetti {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.celebration-modal__confetti-piece {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    animation: confettiFall 3s ease-in-out forwards;
+}
+
+.celebration-modal__confetti-piece:nth-child(even) {
+    background: linear-gradient(135deg, #ec4899, #db2777);
+}
+
+.celebration-modal__confetti-piece:nth-child(3n) {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+}
+
+@keyframes confettiFall {
+    0% {
+        transform: translateY(-100px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(600px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.reward-toast {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9998;
+    background: white;
+    border-radius: 12px;
+    padding: 16px 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    transform: translateX(400px);
+    opacity: 0;
+    transition: all 0.3s ease-out;
+}
+
+.reward-toast--visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.reward-toast__content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.reward-toast__item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    color: #059669;
+}
+
+.reward-toast__item--gems {
+    color: #7c3aed;
+}
+
+.level-up-animation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.level-up-animation--stage-1 {
+    opacity: 1;
+}
+
+.level-up-animation__burst {
+    position: absolute;
+    width: 300px;
+    height: 300px;
+}
+
+.level-up-animation__ray {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150px;
+    height: 4px;
+    background: linear-gradient(90deg, #fbbf24, transparent);
+    transform-origin: left center;
+    animation: rayBurst 0.6s ease-out forwards;
+}
+
+@keyframes rayBurst {
+    0% {
+        transform: translateX(0) scaleX(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(150px) scaleX(1);
+        opacity: 0;
+    }
+}
+
+.level-up-animation__content {
+    position: relative;
+    text-align: center;
+    animation: levelUpBounce 0.8s ease-out;
+}
+
+@keyframes levelUpBounce {
+    0% {
+        transform: scale(0);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.level-up-animation__icon {
+    color: #fbbf24;
+    margin-bottom: 16px;
+}
+
+.level-up-animation__level {
+    font-size: 4rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 8px;
+}
+
+.level-up-animation__label {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #fbbf24;
+}
