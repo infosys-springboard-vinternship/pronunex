@@ -194,17 +194,14 @@ export function Practice() {
     const { toast } = useUI();
     const { settings } = useSettings();
 
-    // Build recommend URL with user preferences
-    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${settings.defaultDifficulty}&limit=${settings.dailyGoal}`;
-    const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl);
-    const sentences = sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
-    const { mutate, isLoading: isAssessing } = useMutation();
-
     // Session storage keys for state persistence
     const STORAGE_KEYS = {
         currentIndex: 'practice_currentIndex',
         sessionId: 'practice_sessionId',
         assessment: 'practice_assessment',
+        sentenceIds: 'practice_sentenceIds',  // Cache sentence order
+        assessmentResults: 'practice_assessmentResults',  // Cache all assessments by sentence ID
+        settingsHash: 'practice_settingsHash',  // Track if settings changed
     };
 
     // Load persisted state from sessionStorage
@@ -219,6 +216,32 @@ export function Practice() {
         }
         return defaultValue;
     };
+
+    // Create a hash of current settings to detect changes
+    const settingsHash = `${settings.defaultDifficulty}_${settings.dailyGoal}`;
+    const cachedSettingsHash = sessionStorage.getItem(STORAGE_KEYS.settingsHash);
+    const cachedSentenceIds = getPersistedState(STORAGE_KEYS.sentenceIds, null);
+
+    // Check if we should use cached sentences or fetch fresh ones
+    const shouldUseCachedSentences = cachedSettingsHash === settingsHash && cachedSentenceIds && cachedSentenceIds.length > 0;
+
+    // Build recommend URL with user preferences
+    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${settings.defaultDifficulty}&limit=${settings.dailyGoal}`;
+    const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl, {
+        enabled: !shouldUseCachedSentences  // Only fetch if we don't have cached sentences
+    });
+
+    // Use cached sentences if available, otherwise use freshly fetched ones
+    const [sentences, setSentences] = useState(() => {
+        if (shouldUseCachedSentences) {
+            // Will be populated from cache in useEffect
+            return [];
+        }
+        return sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
+    });
+
+    const { mutate, isLoading: isAssessing } = useMutation();
+
 
     // Initialize state with persisted values
     const [currentIndex, setCurrentIndex] = useState(() =>
@@ -294,6 +317,69 @@ export function Practice() {
             setCurrentIndex(0);
         }
     }, [sentences, currentIndex]);
+
+    // Cache sentences when freshly fetched from API
+    useEffect(() => {
+        if (sentencesData && !shouldUseCachedSentences) {
+            const newSentences = sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
+            if (newSentences.length > 0) {
+                // Update sentences state
+                setSentences(newSentences);
+
+                // Cache sentence IDs for future loads
+                const sentenceIds = newSentences.map(s => s.id);
+                sessionStorage.setItem(STORAGE_KEYS.sentenceIds, JSON.stringify(sentenceIds));
+
+                // Save current settings hash
+                sessionStorage.setItem(STORAGE_KEYS.settingsHash, settingsHash);
+            }
+        }
+    }, [sentencesData, shouldUseCachedSentences, settingsHash]);
+
+    // Load sentences from cache if available
+    useEffect(() => {
+        const loadCachedSentences = async () => {
+            if (shouldUseCachedSentences && sentences.length === 0 && cachedSentenceIds) {
+                try {
+                    // Fetch sentences by their IDs in the cached order
+                    const token = sessionStorage.getItem('access_token');
+                    const cachedSentencesPromises = cachedSentenceIds.map(id =>
+                        fetch(`${ENDPOINTS.SENTENCES.DETAIL(id)}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }).then(res => res.json())
+                    );
+
+                    const cachedSentencesData = await Promise.all(cachedSentencesPromises);
+                    setSentences(cachedSentencesData);
+                } catch (err) {
+                    console.error('Failed to load cached sentences:', err);
+                    // If cache loading fails, trigger a refetch
+                    sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
+                    sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
+                    refetch();
+                }
+            }
+        };
+
+        loadCachedSentences();
+    }, [shouldUseCachedSentences, sentences.length, cachedSentenceIds]);
+
+    // Load assessment result for current sentence from cache when navigating
+    useEffect(() => {
+        if (currentSentence) {
+            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+            const cachedAssessment = assessmentResults[currentSentence.id];
+
+            if (cachedAssessment) {
+                // Load previously saved assessment
+                setAssessment(cachedAssessment);
+            } else {
+                // No cached assessment for this sentence
+                setAssessment(null);
+            }
+        }
+    }, [currentSentence?.id]);
+
 
     // Create session on mount (only if no persisted session)
     useEffect(() => {
@@ -489,11 +575,15 @@ export function Practice() {
             setAssessment(data);
             toast.success('Assessment complete!');
 
+            // Cache this assessment result for this sentence
+            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+            assessmentResults[currentSentence.id] = data;
+            sessionStorage.setItem(STORAGE_KEYS.assessmentResults, JSON.stringify(assessmentResults));
+
             // Auto-advance to next sentence if enabled and score is good
             if (settings.autoAdvance && data.overall_score >= 0.7 && currentIndex < (sentences?.length || 0) - 1) {
                 setTimeout(() => {
                     setCurrentIndex(prev => prev + 1);
-                    setAssessment(null);
                     setAssessmentError(null);
                     cancelRecording();
                     toast.info('Auto-advancing to next sentence...');
@@ -509,7 +599,7 @@ export function Practice() {
     const handleNext = () => {
         if (currentIndex < (sentences?.length || 0) - 1) {
             setCurrentIndex(prev => prev + 1);
-            setAssessment(null);
+            // Assessment will be auto-loaded from cache via useEffect
             setAssessmentError(null);
             cancelRecording();
         }
@@ -518,13 +608,20 @@ export function Practice() {
     const handlePrevious = () => {
         if (currentIndex > 0) {
             setCurrentIndex(prev => prev - 1);
-            setAssessment(null);
+            // Assessment will be auto-loaded from cache via useEffect
             setAssessmentError(null);
             cancelRecording();
         }
     };
 
     const handleTryAgain = () => {
+        // Clear current sentence's cached assessment
+        if (currentSentence) {
+            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+            delete assessmentResults[currentSentence.id];
+            sessionStorage.setItem(STORAGE_KEYS.assessmentResults, JSON.stringify(assessmentResults));
+        }
+
         setAssessment(null);
         setAssessmentError(null);
         cancelRecording();
