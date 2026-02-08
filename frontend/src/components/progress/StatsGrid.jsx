@@ -205,9 +205,17 @@ function StatsCard({
                     `${prefix}${value}${suffix}`
                 )}
             </span>
-            {customVisualization || (sparkData && sparkData.length > 0 && (
-                <Sparkline data={sparkData} color={color} />
-            ))}
+            {customVisualization || (
+                <Sparkline
+                    data={sparkData && sparkData.length >= 2
+                        ? sparkData
+                        : sparkData && sparkData.length === 1
+                            ? [sparkData[0] * 0.8, sparkData[0]] // Show progression from 80% to current
+                            : [0, 0] // Flat baseline for no data
+                    }
+                    color={color}
+                />
+            )}
             {trend !== undefined && trend !== null && (
                 <div className={`stats-card__trend stats-card__trend--${trendClass}`}>
                     {trend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
@@ -285,12 +293,13 @@ export function StatsGrid({ stats, sparklineData, trend, sessionHistory = [] }) 
                 color={CHART_COLORS.neutral}
                 gradient="slate"
                 customVisualization={
-                    practiceMinutesData.length > 0 ? (
-                        <MiniBarChart
-                            data={practiceMinutesData}
-                            color={CHART_COLORS.neutral}
-                        />
-                    ) : null
+                    <MiniBarChart
+                        data={practiceMinutesData.length > 0 
+                            ? practiceMinutesData 
+                            : [0, 0, 0, 0, 0, 0, 0] // 7 days of zero data as fallback
+                        }
+                        color={CHART_COLORS.neutral}
+                    />
                 }
             />
             <StatsCard
