@@ -21,13 +21,11 @@ export const DEFAULT_SETTINGS = {
     playbackVolume: 80,
 
     // Practice Preferences
-    defaultDifficulty: 'intermediate', // 'beginner' | 'intermediate' | 'advanced'
+    defaultDifficulty: 'beginner', // 'beginner' | 'intermediate' | 'advanced'
     sessionLength: 10, // minutes
     dailyGoal: 10, // number of sentences per day
-    autoAdvance: true,
+    autoAdvance: false,
 
-    // System
-    apiBaseUrl: 'http://localhost:8000',
 };
 
 export const COLOR_PRESETS = [
