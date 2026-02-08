@@ -294,13 +294,6 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
                         left: tooltip.x,
                         top: tooltip.y,
                         transform: 'translate(-50%, -100%)',
-                        background: '#0f172a',
-                        color: '#fff',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        fontWeight: '500',
-                        whiteSpace: 'nowrap',
                         pointerEvents: 'none',
                         zIndex: 10
                     }}

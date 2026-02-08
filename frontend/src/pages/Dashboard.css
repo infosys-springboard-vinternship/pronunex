@@ -469,12 +469,25 @@
     height: 100%;
 }
 
-/* AI Insight Card - Differentiated Style */
+/* Chart Tooltip - Theme Aware */
+.dashboard__chart-tooltip {
+    background: var(--surface-active, #333333);
+    color: var(--text-primary);
+    padding: 6px 10px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    white-space: nowrap;
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border-primary);
+}
+
+/* AI Insight Card - Differentiated Style with Theme Awareness */
 .dashboard__ai-insight {
-    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%);
     border-radius: var(--radius-xl);
     padding: var(--space-4);
-    border: 1px solid rgba(4, 120, 87, 0.15);
+    border: 1px solid var(--color-primary-200);
     display: flex;
     gap: var(--space-3);
     align-items: flex-start;
@@ -500,7 +513,7 @@
 .dashboard__ai-label {
     font-size: var(--text-xs);
     font-weight: var(--font-semibold);
-    color: var(--color-primary-700);
+    color: var(--color-primary-600);
     margin: 0 0 var(--space-1) 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -508,7 +521,7 @@
 
 .dashboard__ai-text {
     font-size: var(--text-sm);
-    color: var(--color-primary-800);
+    color: var(--text-primary);
     margin: 0;
     line-height: 1.5;
 }
@@ -853,4 +866,18 @@
 
 [data-theme='dark'] .dashboard__action-icon--info {
     background: rgba(59, 130, 246, 0.15);
+}
+
+/* AI Insight Card - Dark Mode Override */
+[data-theme='dark'] .dashboard__ai-insight {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.15) 100%);
+    border-color: rgba(16, 185, 129, 0.25);
+}
+
+[data-theme='dark'] .dashboard__ai-label {
+    color: #34d399;
+}
+
+[data-theme='dark'] .dashboard__ai-text {
+    color: var(--text-secondary);
 }
