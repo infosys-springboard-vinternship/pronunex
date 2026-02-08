@@ -193,7 +193,7 @@ def generate_highlighted_word(
     Generate word with letter-level highlighting data.
     
     Args:
-        expected_word: Expected word
+        expected_word: Expected word (may include trailing punctuation)
         actual_word: Actual spoken word
         correct_class: CSS class for correct letters
         incorrect_class: CSS class for incorrect letters
@@ -201,7 +201,12 @@ def generate_highlighted_word(
     Returns:
         Dict with word info and letter highlighting
     """
-    statuses = highlight_letter_errors(expected_word, actual_word)
+    # Strip trailing punctuation for comparison (but track what was stripped)
+    clean_expected = expected_word.rstrip(punctuation)
+    clean_actual = actual_word.rstrip(punctuation) if actual_word and actual_word != '-' else actual_word
+    
+    # Get letter statuses for the cleaned words (without punctuation)
+    statuses = highlight_letter_errors(clean_expected, clean_actual)
     
     letters = []
     for status in statuses:
@@ -218,8 +223,8 @@ def generate_highlighted_word(
     total = len(statuses)
     
     return {
-        'word': expected_word,
-        'actual': actual_word,
+        'word': clean_expected,  # Return cleaned word (without punctuation)
+        'actual': clean_actual if clean_actual else actual_word,
         'letters': letters,
         'correct_count': correct_count,
         'total_letters': total,
