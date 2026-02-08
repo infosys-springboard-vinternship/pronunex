@@ -58,7 +58,7 @@ export function useApi(endpoint, options = {}) {
             mountedRef.current = false;
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [immediate, ...deps]);
+    }, [immediate, endpoint, ...deps]);
 
     return {
         data,

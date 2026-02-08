@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { useApi, useMutation } from '../hooks/useApi';
 import { useUI } from '../context/UIContext';
+import { useSettings } from '../context/SettingsContext';
 import { api } from '../api/client';
 import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
@@ -191,8 +192,11 @@ function ScoreRing({ score }) {
 export function Practice() {
     const navigate = useNavigate();
     const { toast } = useUI();
+    const { settings } = useSettings();
 
-    const { data: sentencesData, isLoading, error, refetch } = useApi(ENDPOINTS.SENTENCES.RECOMMEND);
+    // Build recommend URL with user preferences
+    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${settings.defaultDifficulty}&limit=${settings.dailyGoal}`;
+    const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl);
     const sentences = sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
     const { mutate, isLoading: isAssessing } = useMutation();
 
@@ -253,6 +257,21 @@ export function Practice() {
 
     const maxDuration = 30;
     const currentSentence = sentences?.[currentIndex];
+
+    // Track settings changes and reset session when difficulty or daily goal changes
+    const prevSettingsRef = useRef({ defaultDifficulty: settings.defaultDifficulty, dailyGoal: settings.dailyGoal });
+    useEffect(() => {
+        const prevSettings = prevSettingsRef.current;
+        if (prevSettings.defaultDifficulty !== settings.defaultDifficulty ||
+            prevSettings.dailyGoal !== settings.dailyGoal) {
+            // Settings changed - clear cached session data and reset
+            Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+            setCurrentIndex(0);
+            setAssessment(null);
+            setSessionId(null);
+            prevSettingsRef.current = { defaultDifficulty: settings.defaultDifficulty, dailyGoal: settings.dailyGoal };
+        }
+    }, [settings.defaultDifficulty, settings.dailyGoal]);
 
     // Persist state changes to sessionStorage
     useEffect(() => {
@@ -469,6 +488,17 @@ export function Practice() {
             // Success - set assessment data
             setAssessment(data);
             toast.success('Assessment complete!');
+
+            // Auto-advance to next sentence if enabled and score is good
+            if (settings.autoAdvance && data.overall_score >= 0.7 && currentIndex < (sentences?.length || 0) - 1) {
+                setTimeout(() => {
+                    setCurrentIndex(prev => prev + 1);
+                    setAssessment(null);
+                    setAssessmentError(null);
+                    cancelRecording();
+                    toast.info('Auto-advancing to next sentence...');
+                }, 2000); // 2 second delay to show results
+            }
         } catch (err) {
             // Network or server error
             toast.error('Failed to assess pronunciation. Please try again.');

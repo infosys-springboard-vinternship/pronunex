@@ -20,6 +20,7 @@ import {
     CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import { useApi } from '../hooks/useApi';
 import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
@@ -406,6 +407,7 @@ function MilestoneBadge({ milestone, progress, isEarned, isNew }) {
 
 export function Dashboard() {
     const { user } = useAuth();
+    const { settings } = useSettings();
     const navigate = useNavigate();
     const { data: progress, isLoading, error, refetch } = useApi(ENDPOINTS.ANALYTICS.PROGRESS);
 
@@ -482,8 +484,8 @@ export function Dashboard() {
     const hasNoActivity = normalizedStats.total_attempts === 0;
     const userInitials = (user?.full_name || user?.username || 'U').charAt(0).toUpperCase();
     const userName = user?.full_name || user?.username || 'User';
-    const userLevel = normalizedStats.average_score >= 0.8 ? 'Advanced' :
-        normalizedStats.average_score >= 0.5 ? 'Intermediate' : 'Beginner';
+    // Use the user's settings preference for difficulty level
+    const userLevel = settings.defaultDifficulty.charAt(0).toUpperCase() + settings.defaultDifficulty.slice(1);
 
     // Mock weak phonemes for display
     const weakPhonemes = normalizedStats.weak_phonemes.length > 0
