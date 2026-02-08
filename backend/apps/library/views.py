@@ -107,12 +107,15 @@ class RecommendedSentencesView(APIView):
         if difficulty:
             queryset = queryset.filter(difficulty_level=difficulty)
         
-        # Fallback to random selection if no matches
+        # Fallback to difficulty-only filter if no matches with weak phonemes
         if not queryset.exists():
-            queryset = ReferenceSentence.objects.filter(
-                is_validated=True,
-                difficulty_level=user.proficiency_level
-            )
+            queryset = ReferenceSentence.objects.filter(is_validated=True)
+            if difficulty:
+                # Respect the explicit difficulty parameter
+                queryset = queryset.filter(difficulty_level=difficulty)
+            else:
+                # Fall back to user's proficiency level only if no difficulty specified
+                queryset = queryset.filter(difficulty_level=user.proficiency_level)
         
         # Ultimate fallback: any validated sentences
         if not queryset.exists():
