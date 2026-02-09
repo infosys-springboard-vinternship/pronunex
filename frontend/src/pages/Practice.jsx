@@ -32,7 +32,7 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter } from '../components/practice';
+import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelectionModal } from '../components/practice';
 import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
@@ -194,6 +194,11 @@ export function Practice() {
     const { toast } = useUI();
     const { settings } = useSettings();
 
+    // Level selection modal state - shown on every page load/navigation
+    // sessionLevel is null until user selects a level, preventing sentence fetch
+    const [showLevelModal, setShowLevelModal] = useState(true);
+    const [sessionLevel, setSessionLevel] = useState(null);
+
     // Session storage keys for state persistence
     const STORAGE_KEYS = {
         currentIndex: 'practice_currentIndex',
@@ -225,10 +230,14 @@ export function Practice() {
     // Check if we should use cached sentences or fetch fresh ones
     const shouldUseCachedSentences = cachedSettingsHash === settingsHash && cachedSentenceIds && cachedSentenceIds.length > 0;
 
-    // Build recommend URL with user preferences
-    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${settings.defaultDifficulty}&limit=${settings.dailyGoal}`;
+    // Build recommend URL with user's selected session level (popup selection)
+    // Only build URL if sessionLevel is selected, otherwise null to prevent early fetch
+    const recommendUrl = sessionLevel
+        ? `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${sessionLevel}&limit=${settings.dailyGoal}`
+        : null;
     const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl, {
-        enabled: !shouldUseCachedSentences  // Only fetch if we don't have cached sentences
+        // Only fetch if level selected AND we don't have cached sentences
+        enabled: !!sessionLevel && !shouldUseCachedSentences
     });
 
     // Use cached sentences if available, otherwise use freshly fetched ones
@@ -728,7 +737,30 @@ export function Practice() {
         return () => audio.removeEventListener('ended', handleEnded);
     }, [audioUrl]);
 
-    // Loading state
+    /**
+     * Handle level selection from the popup modal.
+     * Sets the session level and closes the modal, triggering sentence fetch.
+     */
+    const handleLevelSelect = (level) => {
+        setSessionLevel(level);
+        setShowLevelModal(false);
+        // Clear any cached sentences from previous sessions with different levels
+        Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+        setCurrentIndex(0);
+        setAssessment(null);
+    };
+
+    // Show level selection modal first - this blocks sentence loading
+    if (showLevelModal) {
+        return (
+            <LevelSelectionModal
+                isOpen={showLevelModal}
+                onSelectLevel={handleLevelSelect}
+            />
+        );
+    }
+
+    // Loading state - only shows after level is selected
     if (isLoading) {
         return (
             <div className="practice-loading">
