@@ -17,6 +17,9 @@ urlpatterns = [
     path('api/v1/library/', include('apps.library.urls')),
     path('api/v1/practice/', include('apps.practice.urls')),
     path('api/v1/', include('apps.analytics.urls')),
+    
+    # Admin API endpoints
+    path('api/v1/admin/', include('apps.accounts.admin_urls')),
 ]
 
 # Serve media files in development

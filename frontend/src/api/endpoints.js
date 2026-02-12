@@ -55,6 +55,26 @@ export const ENDPOINTS = {
         WEAK_PHONEMES: `${BASE_PATH}/analytics/weak-phonemes/`,
         HISTORY: `${BASE_PATH}/analytics/history/`,
     },
+
+    // Admin
+    ADMIN: {
+        STATS: `${BASE_PATH}/admin/stats/`,
+        USERS: `${BASE_PATH}/admin/users/`,
+        USER_DETAIL: (id) => `${BASE_PATH}/admin/users/${id}/`,
+        USER_DISABLE: (id) => `${BASE_PATH}/admin/users/${id}/disable/`,
+        USER_ENABLE: (id) => `${BASE_PATH}/admin/users/${id}/enable/`,
+        USER_RESET: (id) => `${BASE_PATH}/admin/users/${id}/reset-progress/`,
+        SENTENCES: `${BASE_PATH}/admin/sentences/`,
+        SENTENCE_DETAIL: (id) => `${BASE_PATH}/admin/sentences/${id}/`,
+        SENTENCE_GENERATE: `${BASE_PATH}/admin/sentences/generate/`,
+        SENTENCE_BULK_IMPORT: `${BASE_PATH}/admin/sentences/bulk-import/`,
+        SENTENCE_EXPORT: `${BASE_PATH}/admin/sentences/export/`,
+        ANALYTICS: `${BASE_PATH}/admin/analytics/`,
+        SCORING: `${BASE_PATH}/admin/scoring/`,
+        SCORING_HISTORY: `${BASE_PATH}/admin/scoring/history/`,
+        SCORING_ROLLBACK: `${BASE_PATH}/admin/scoring/rollback/`,
+        LOGS: `${BASE_PATH}/admin/logs/`,
+    },
 };
 
 export default ENDPOINTS;

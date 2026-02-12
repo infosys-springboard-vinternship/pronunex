@@ -37,6 +37,15 @@ const Progress = lazy(() => import('./pages/Progress'));
 const AdminProfile = lazy(() => import('./pages/AdminProfile'));
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 
+// Admin pages
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminUserDetail = lazy(() => import('./pages/admin/AdminUserDetail'));
+const AdminSentences = lazy(() => import('./pages/admin/AdminSentences'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminScoring = lazy(() => import('./pages/admin/AdminScoring'));
+const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
+
 function ProtectedRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth();
     if (isLoading) return <LoadingOverlay message="Loading..." />;
@@ -160,7 +169,15 @@ function App() {
                 {/* Lazy Loaded Protected Routes */}
                 <Route path="/practice" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Practice /></Suspense></MainLayout></ProtectedRoute>} />
                 <Route path="/progress" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><Progress /></Suspense></MainLayout></ProtectedRoute>} />
-                <Route path="/admin" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminProfile /></Suspense></MainLayout></ProtectedRoute>} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminDashboard /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/users" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminUsers /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/users/:userId" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminUserDetail /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/sentences" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminSentences /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/analytics" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminAnalytics /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/scoring" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminScoring /></Suspense></MainLayout></ProtectedRoute>} />
+                <Route path="/admin/logs" element={<ProtectedRoute><MainLayout><Suspense fallback={<LoadingOverlay />}><AdminLogs /></Suspense></MainLayout></ProtectedRoute>} />
 
                 {/* Catch-all redirect */}
                 <Route path="*" element={<Navigate to="/" replace />} />

@@ -125,6 +125,10 @@ class ReferenceSentence(models.Model):
         verbose_name = 'Reference Sentence'
         verbose_name_plural = 'Reference Sentences'
         ordering = ['difficulty_level', '-created_at']
+        indexes = [
+            models.Index(fields=['difficulty_level', '-created_at']),
+            models.Index(fields=['source', '-created_at']),
+        ]
     
     def __str__(self):
         return f"{self.text[:50]}..." if len(self.text) > 50 else self.text
