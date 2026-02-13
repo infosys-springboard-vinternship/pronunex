@@ -41,6 +41,13 @@ const LEVELS = [
     },
 ];
 
+/* Map level keys to CSS difficulty modifiers */
+const TIER_CLASS_MAP = {
+    core: 'level-selector__card--beginner',
+    edge: 'level-selector__card--intermediate',
+    elite: 'level-selector__card--advanced',
+};
+
 function LevelSelector({ defaultLevel = 'core', onSelectLevel }) {
     const [selected, setSelected] = useState(defaultLevel);
 
@@ -63,12 +70,13 @@ function LevelSelector({ defaultLevel = 'core', onSelectLevel }) {
                 {LEVELS.map((level) => {
                     const IconComponent = level.icon;
                     const isSelected = selected === level.key;
+                    const tierClass = TIER_CLASS_MAP[level.key] || '';
 
                     return (
                         <button
                             key={level.key}
                             type="button"
-                            className={`level-selector__card ${isSelected ? 'level-selector__card--selected' : ''}`}
+                            className={`level-selector__card ${tierClass} ${isSelected ? 'level-selector__card--selected' : ''}`}
                             onClick={() => setSelected(level.key)}
                             aria-pressed={isSelected}
                         >

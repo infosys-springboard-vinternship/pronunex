@@ -86,14 +86,79 @@
     border: 2px solid var(--border-primary);
     border-radius: var(--radius-2xl);
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.35s ease;
     box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    z-index: 0;
+}
+
+/* Gradient glow pseudo-element */
+.level-selector__card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    z-index: -1;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+}
+
+/* Difficulty-specific gradient overlays */
+.level-selector__card--beginner::before {
+    background: linear-gradient(135deg,
+            rgba(16, 185, 129, 0.15) 0%,
+            rgba(52, 211, 153, 0.08) 50%,
+            rgba(16, 185, 129, 0.02) 100%);
+}
+
+.level-selector__card--intermediate::before {
+    background: linear-gradient(135deg,
+            rgba(20, 184, 166, 0.15) 0%,
+            rgba(45, 212, 191, 0.08) 50%,
+            rgba(20, 184, 166, 0.02) 100%);
+}
+
+.level-selector__card--advanced::before {
+    background: linear-gradient(135deg,
+            rgba(168, 85, 247, 0.15) 0%,
+            rgba(192, 132, 252, 0.08) 50%,
+            rgba(168, 85, 247, 0.02) 100%);
 }
 
 .level-selector__card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-6px);
     box-shadow: var(--shadow-lg);
     border-color: var(--border-secondary);
+}
+
+.level-selector__card:hover::before {
+    opacity: 1;
+}
+
+/* Difficulty-specific hover border + shadow glow */
+.level-selector__card--beginner:hover {
+    border-color: var(--difficulty-beginner-border);
+    box-shadow:
+        var(--shadow-lg),
+        0 0 20px rgba(16, 185, 129, 0.15),
+        0 0 40px rgba(16, 185, 129, 0.05);
+}
+
+.level-selector__card--intermediate:hover {
+    border-color: var(--difficulty-intermediate-border);
+    box-shadow:
+        var(--shadow-lg),
+        0 0 20px rgba(20, 184, 166, 0.15),
+        0 0 40px rgba(20, 184, 166, 0.05);
+}
+
+.level-selector__card--advanced:hover {
+    border-color: var(--difficulty-advanced-border);
+    box-shadow:
+        var(--shadow-lg),
+        0 0 20px rgba(168, 85, 247, 0.15),
+        0 0 40px rgba(168, 85, 247, 0.05);
 }
 
 .level-selector__card:focus-visible {
