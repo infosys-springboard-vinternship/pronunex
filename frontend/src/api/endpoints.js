@@ -36,6 +36,21 @@ export const ENDPOINTS = {
     },
 
     // Practice
+    PRACTICE: {
+        SESSIONS: {
+            LIST: `${BASE_PATH}/practice/sessions/`,
+            CREATE: `${BASE_PATH}/practice/sessions/`,
+            DETAIL: (id) => `${BASE_PATH}/practice/sessions/${id}/`,
+            END: (id) => `${BASE_PATH}/practice/sessions/${id}/end/`,
+        },
+        ATTEMPTS: {
+            LIST: `${BASE_PATH}/practice/attempts/`,
+            DETAIL: (id) => `${BASE_PATH}/practice/attempts/${id}/`,
+        },
+        ASSESS: `${BASE_PATH}/practice/assess/`,
+        SUBLEVEL_COMPLETE: `${BASE_PATH}/practice/sublevel-complete/`,
+        SUBLEVEL_PROGRESS: `${BASE_PATH}/practice/sublevel-progress/`,
+    },
     SESSIONS: {
         LIST: `${BASE_PATH}/practice/sessions/`,
         CREATE: `${BASE_PATH}/practice/sessions/`,

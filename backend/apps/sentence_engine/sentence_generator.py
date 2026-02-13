@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def generate_practice_sentence(
     weak_phonemes: List[str],
-    difficulty: str = 'intermediate',
+    difficulty: str = 'edge',
     max_retries: int = 3
 ) -> dict:
     """
@@ -33,7 +33,7 @@ def generate_practice_sentence(
     
     Args:
         weak_phonemes: List of ARPAbet phonemes user struggles with
-        difficulty: beginner, intermediate, or advanced
+        difficulty: core, edge, or elite
         max_retries: Max LLM calls before using fallback
     
     Returns:
@@ -100,37 +100,37 @@ def get_fallback_sentence(difficulty: str, target_phonemes: List[str] = None) ->
     """
     fallback_sentences = {
         'TH': {
-            'beginner': "The three brothers think together.",
-            'intermediate': "They thought thoroughly about the theme.",
-            'advanced': "The theoretical methodology was thoroughly analyzed.",
+            'core': "The three brothers think together.",
+            'edge': "They thought thoroughly about the theme.",
+            'elite': "The theoretical methodology was thoroughly analyzed.",
         },
         'R': {
-            'beginner': "The red robin ran really fast.",
-            'intermediate': "Richard's favorite restaurant serves rice.",
-            'advanced': "The researcher reported remarkable results.",
+            'core': "The red robin ran really fast.",
+            'edge': "Richard's favorite restaurant serves rice.",
+            'elite': "The researcher reported remarkable results.",
         },
         'S': {
-            'beginner': "Sally sees six small snakes.",
-            'intermediate': "The sister whispered softly to herself.",
-            'advanced': "The scientist stressed systematic solutions.",
+            'core': "Sally sees six small snakes.",
+            'edge': "The sister whispered softly to herself.",
+            'elite': "The scientist stressed systematic solutions.",
         },
         'L': {
-            'beginner': "Lucy loves little yellow lemons.",
-            'intermediate': "The little girl laughed loudly.",
-            'advanced': "The linguist analyzed lateral articulation.",
+            'core': "Lucy loves little yellow lemons.",
+            'edge': "The little girl laughed loudly.",
+            'elite': "The linguist analyzed lateral articulation.",
         },
         'SH': {
-            'beginner': "She sells fresh fish.",
-            'intermediate': "Shelly should share her shoes.",
-            'advanced': "The ship's shadow shimmered on the shore.",
+            'core': "She sells fresh fish.",
+            'edge': "Shelly should share her shoes.",
+            'elite': "The ship's shadow shimmered on the shore.",
         },
     }
     
     # Default sentences by difficulty
     default_sentences = {
-        'beginner': "The quick brown fox jumps.",
-        'intermediate': "She sells seashells by the seashore.",
-        'advanced': "Peter Piper picked a peck of pickled peppers.",
+        'core': "The quick brown fox jumps.",
+        'edge': "She sells seashells by the seashore.",
+        'elite': "Peter Piper picked a peck of pickled peppers.",
     }
     
     if target_phonemes:
@@ -140,7 +140,7 @@ def get_fallback_sentence(difficulty: str, target_phonemes: List[str] = None) ->
             if clean_phoneme in fallback_sentences:
                 sentence = fallback_sentences[clean_phoneme].get(
                     difficulty, 
-                    fallback_sentences[clean_phoneme]['intermediate']
+                    fallback_sentences[clean_phoneme]['edge']
                 )
                 return {
                     'sentence': sentence,
@@ -151,7 +151,7 @@ def get_fallback_sentence(difficulty: str, target_phonemes: List[str] = None) ->
                 }
     
     return {
-        'sentence': default_sentences.get(difficulty, default_sentences['intermediate']),
+        'sentence': default_sentences.get(difficulty, default_sentences['edge']),
         'target_words': [],
         'target_phonemes': [],
         'source': 'fallback',
@@ -162,7 +162,7 @@ def get_fallback_sentence(difficulty: str, target_phonemes: List[str] = None) ->
 def batch_generate_sentences(
     weak_phonemes: List[str],
     count: int = 5,
-    difficulty: str = 'intermediate'
+    difficulty: str = 'edge'
 ) -> List[dict]:
     """
     Generate multiple practice sentences for a user.

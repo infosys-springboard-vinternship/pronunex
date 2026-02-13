@@ -21,7 +21,7 @@ export const DEFAULT_SETTINGS = {
     playbackVolume: 80,
 
     // Practice Preferences
-    defaultDifficulty: 'beginner', // 'beginner' | 'intermediate' | 'advanced'
+    defaultDifficulty: 'core', // 'core' | 'edge' | 'elite'
     sessionLength: 10, // minutes
     dailyGoal: 10, // number of sentences per day
     autoAdvance: false,

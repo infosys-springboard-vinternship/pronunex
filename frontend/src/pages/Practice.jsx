@@ -32,7 +32,7 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelector, SessionProgressIndicator } from '../components/practice';
+import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelector, SublevelSelector, SublevelSummary, SessionProgressIndicator } from '../components/practice';
 import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
@@ -200,6 +200,15 @@ export function Practice() {
         return cached || null;
     });
 
+    // Sublevel selection — null means show sublevel selector screen
+    const [selectedSublevel, setSelectedSublevel] = useState(() => {
+        const cached = sessionStorage.getItem('practice_selectedSublevel');
+        return cached || null;
+    });
+
+    // Sublevel summary state
+    const [showSublevelSummary, setShowSublevelSummary] = useState(false);
+
     // Session storage keys for state persistence
     const STORAGE_KEYS = {
         currentIndex: 'practice_currentIndex',
@@ -208,6 +217,7 @@ export function Practice() {
         sentenceIds: 'practice_sentenceIds',  // Cache sentence order
         assessmentResults: 'practice_assessmentResults',  // Cache all assessments by sentence ID
         settingsHash: 'practice_settingsHash',  // Track if settings changed
+        sublevelSummaryShown: 'practice_sublevelSummaryShown',  // Track if summary was shown
     };
 
     // Load persisted state from sessionStorage
@@ -225,17 +235,17 @@ export function Practice() {
 
     // Create a hash of current settings to detect changes
     const activeDifficulty = selectedLevel || settings.defaultDifficulty;
-    const settingsHash = `${activeDifficulty}_${settings.dailyGoal}`;
+    const settingsHash = `${activeDifficulty}_${selectedSublevel || ''}_${settings.dailyGoal}`;
     const cachedSettingsHash = sessionStorage.getItem(STORAGE_KEYS.settingsHash);
     const cachedSentenceIds = getPersistedState(STORAGE_KEYS.sentenceIds, null);
 
     // Check if we should use cached sentences or fetch fresh ones
     const shouldUseCachedSentences = cachedSettingsHash === settingsHash && cachedSentenceIds && cachedSentenceIds.length > 0;
 
-    // Build recommend URL with user preferences
-    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${activeDifficulty}&limit=${settings.dailyGoal}`;
+    // Build recommend URL with user preferences (including sublevel)
+    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${activeDifficulty}&sublevel=${selectedSublevel || '1'}&limit=5`;
     const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl, {
-        enabled: !!selectedLevel && !shouldUseCachedSentences  // Only fetch once level is chosen and no cache
+        enabled: !!selectedLevel && !!selectedSublevel && !shouldUseCachedSentences  // Only fetch once level AND sublevel are chosen
     });
 
     // Use cached sentences if available, otherwise use freshly fetched ones
@@ -288,20 +298,25 @@ export function Practice() {
     const maxDuration = 30;
     const currentSentence = sentences?.[currentIndex];
 
-    // Track settings changes and reset session when difficulty or daily goal changes
-    const prevSettingsRef = useRef({ defaultDifficulty: activeDifficulty, dailyGoal: settings.dailyGoal });
+    // Track settings changes and reset session when difficulty, sublevel, or daily goal changes
+    const prevSettingsRef = useRef({ defaultDifficulty: activeDifficulty, sublevel: selectedSublevel, dailyGoal: settings.dailyGoal });
     useEffect(() => {
         const prevSettings = prevSettingsRef.current;
         if (prevSettings.defaultDifficulty !== activeDifficulty ||
+            prevSettings.sublevel !== selectedSublevel ||
             prevSettings.dailyGoal !== settings.dailyGoal) {
             // Settings changed - clear cached session data and reset
-            Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+            Object.values(STORAGE_KEYS).forEach(key => {
+                if (key !== 'practice_selectedLevel' && key !== 'practice_selectedSublevel') {
+                    sessionStorage.removeItem(key);
+                }
+            });
             setCurrentIndex(0);
             setAssessment(null);
             setSessionId(null);
-            prevSettingsRef.current = { defaultDifficulty: activeDifficulty, dailyGoal: settings.dailyGoal };
+            prevSettingsRef.current = { defaultDifficulty: activeDifficulty, sublevel: selectedSublevel, dailyGoal: settings.dailyGoal };
         }
-    }, [activeDifficulty, settings.dailyGoal]);
+    }, [activeDifficulty, selectedSublevel, settings.dailyGoal]);
 
     // Persist selectedLevel to sessionStorage
     useEffect(() => {
@@ -311,6 +326,15 @@ export function Practice() {
             sessionStorage.removeItem('practice_selectedLevel');
         }
     }, [selectedLevel]);
+
+    // Persist selectedSublevel to sessionStorage
+    useEffect(() => {
+        if (selectedSublevel) {
+            sessionStorage.setItem('practice_selectedSublevel', selectedSublevel);
+        } else {
+            sessionStorage.removeItem('practice_selectedSublevel');
+        }
+    }, [selectedSublevel]);
 
     // Compute completed count and average score from cached assessments
     const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
@@ -624,12 +648,40 @@ export function Practice() {
     };
 
     // Navigation handlers
-    const handleNext = () => {
+    const handleNext = async () => {
         if (currentIndex < (sentences?.length || 0) - 1) {
             setCurrentIndex(prev => prev + 1);
             // Assessment will be auto-loaded from cache via useEffect
             setAssessmentError(null);
             cancelRecording();
+        } else {
+            // Last sentence completed - show sublevel summary
+            const results = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+            const completedSentences = sentences.filter(s => results[s.id]);
+            
+            if (completedSentences.length === 5) {
+                // Calculate average score
+                const totalScore = completedSentences.reduce((sum, s) => {
+                    const result = results[s.id];
+                    return sum + (result.overall_score || 0);
+                }, 0);
+                const avgScore = totalScore / completedSentences.length;
+
+                // Save sublevel completion to backend
+                try {
+                    await api.post(ENDPOINTS.PRACTICE.SUBLEVEL_COMPLETE, {
+                        level: selectedLevel,
+                        sublevel: selectedSublevel,
+                        average_score: avgScore,
+                        attempts: 5
+                    });
+                } catch (err) {
+                    console.error('Failed to save sublevel completion:', err);
+                }
+
+                // Show summary
+                setShowSublevelSummary(true);
+            }
         }
     };
 
@@ -676,7 +728,9 @@ export function Practice() {
     const handleChangeLevel = () => {
         Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
         sessionStorage.removeItem('practice_selectedLevel');
+        sessionStorage.removeItem('practice_selectedSublevel');
         setSelectedLevel(null);
+        setSelectedSublevel(null);
         setCurrentIndex(0);
         setAssessment(null);
         setAssessmentError(null);
@@ -687,6 +741,15 @@ export function Practice() {
     // Handle level selection from the LevelSelector component
     const handleLevelSelected = async (level) => {
         setSelectedLevel(level);
+        setSelectedSublevel(null);  // Reset sublevel when changing level
+        resetPracticeState();
+    };
+
+    // Handle sublevel selection from the SublevelSelector component
+    const handleSublevelSelected = async (sublevel) => {
+        setSelectedSublevel(sublevel);
+        resetPracticeState();
+        setShowSublevelSummary(false);
         // Create a new session
         try {
             const { data } = await api.post(ENDPOINTS.SESSIONS.CREATE, {});
@@ -694,6 +757,30 @@ export function Practice() {
         } catch (err) {
             console.error('Failed to create session:', err);
         }
+    };
+
+    // Handle retry sublevel from summary
+    const handleRetrySublevel = () => {
+        setShowSublevelSummary(false);
+        resetPracticeState();
+        // Clear cached results
+        sessionStorage.removeItem(STORAGE_KEYS.assessmentResults);
+        sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
+        sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
+        // Refetch sentences
+        refetch();
+    };
+
+    // Handle next sublevel from summary
+    const handleNextSublevel = () => {
+        setShowSublevelSummary(false);
+        const nextSublevel = selectedSublevel === '1' ? '2' : '1';
+        setSelectedSublevel(nextSublevel);
+        resetPracticeState();
+        // Clear cached results
+        sessionStorage.removeItem(STORAGE_KEYS.assessmentResults);
+        sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
+        sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
     };
 
     // Play reference audio (TTS) - uses cached audio for instant playback
@@ -785,6 +872,59 @@ export function Practice() {
                     onSelectLevel={handleLevelSelected}
                 />
             </div>
+        );
+    }
+
+    // Sublevel selector screen — shown after level selected but before practice
+    if (selectedLevel && !selectedSublevel) {
+        return (
+            <div className="practice">
+                <SublevelSelector
+                    level={selectedLevel}
+                    onSelectSublevel={handleSublevelSelected}
+                    onBack={() => setSelectedLevel(null)}
+                />
+            </div>
+        );
+    }
+
+    // Sublevel summary screen — shown after completing all 5 sentences
+    if (showSublevelSummary) {
+        const results = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+        const completedSentences = sentences.filter(s => results[s.id]);
+        
+        // Calculate stats
+        const totalScore = completedSentences.reduce((sum, s) => {
+            return sum + (results[s.id]?.overall_score || 0);
+        }, 0);
+        const avgScore = totalScore / Math.max(completedSentences.length, 1);
+
+        // Collect all weak phonemes
+        const allWeakPhonemes = [];
+        completedSentences.forEach(s => {
+            const result = results[s.id];
+            if (result?.weak_phonemes) {
+                allWeakPhonemes.push(...result.weak_phonemes);
+            }
+        });
+        
+        // Find most common weak phoneme (focus area)
+        const phonemeCounts = {};
+        allWeakPhonemes.forEach(p => {
+            phonemeCounts[p] = (phonemeCounts[p] || 0) + 1;
+        });
+        const uniqueWeakPhonemes = Object.keys(phonemeCounts).sort((a, b) => phonemeCounts[b] - phonemeCounts[a]);
+
+        return (
+            <SublevelSummary
+                level={selectedLevel}
+                sublevel={selectedSublevel}
+                averageScore={avgScore}
+                weakPhonemes={uniqueWeakPhonemes}
+                totalAttempts={completedSentences.length}
+                onRetry={handleRetrySublevel}
+                onNext={handleNextSublevel}
+            />
         );
     }
 

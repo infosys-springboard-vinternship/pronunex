@@ -35,7 +35,7 @@ class ReferenceSentenceListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReferenceSentence
         fields = [
-            'id', 'text', 'difficulty_level', 'audio_source',
+            'id', 'text', 'difficulty_level', 'sublevel', 'audio_source',
             'target_phonemes', 'source', 'is_validated'
         ]
     
@@ -52,7 +52,7 @@ class ReferenceSentenceDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReferenceSentence
         fields = [
-            'id', 'text', 'difficulty_level', 'audio_source',
+            'id', 'text', 'difficulty_level', 'sublevel', 'audio_source',
             'phoneme_sequence', 'alignment_map', 'target_phonemes',
             'source', 'is_validated', 'sentence_phonemes',
             'created_at', 'updated_at'

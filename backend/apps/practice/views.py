@@ -10,13 +10,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.utils import timezone
 
-from .models import UserSession, Attempt, PhonemeError
+from .models import UserSession, Attempt, PhonemeError, SublevelProgress
 from .serializers import (
     UserSessionSerializer,
     AttemptListSerializer,
     AttemptDetailSerializer,
     AttemptCreateSerializer,
     AssessmentResultSerializer,
+    SublevelProgressSerializer,
+    SublevelCompleteSerializer,
 )
 from .services import AssessmentService
 from apps.library.models import ReferenceSentence, Phoneme
@@ -317,4 +319,107 @@ class AssessmentView(APIView):
         except Exception as e:
             logger.error(f"TTS generation failed for sentence {sentence.id}: {str(e)}")
             # Continue anyway - will fall back to dev mode in assessment
+
+
+class SublevelCompleteView(APIView):
+    """
+    POST /api/v1/sublevel-complete/
+    
+    Record sublevel completion after user finishes all 5 sentences.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer = SublevelCompleteSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        level = serializer.validated_data['level']
+        sublevel = serializer.validated_data['sublevel']
+        average_score = serializer.validated_data['average_score']
+        attempts = serializer.validated_data['attempts']
+        
+        progress = SublevelProgress.objects.create(
+            user=request.user,
+            level=level,
+            sublevel=sublevel,
+            average_score=average_score,
+            attempts=attempts,
+            completed=True
+        )
+        
+        logger.info(f"Sublevel completed: {request.user.email} - {level} L{sublevel} - {average_score}")
+        
+        return Response(
+            SublevelProgressSerializer(progress).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class SublevelProgressView(APIView):
+    """
+    GET /api/v1/sublevel-progress/
+    
+    Get user's progress summary for all sublevels in a level.
+    
+    Query params:
+    - level: core, edge, elite
+    
+    Returns completion %, best score, and attempt count per sublevel.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        level = request.query_params.get('level')
+        
+        if not level:
+            return Response(
+                {'error': 'level parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        from django.db.models import Max, Count, Avg
+        
+        progress_data = []
+        for sublevel_num in ['1', '2']:
+            progress_records = SublevelProgress.objects.filter(
+                user=request.user,
+                level=level,
+                sublevel=sublevel_num
+            )
+            
+            if progress_records.exists():
+                stats = progress_records.aggregate(
+                    best_score=Max('average_score'),
+                    attempt_count=Count('id'),
+                    avg_score=Avg('average_score')
+                )
+                
+                progress_data.append({
+                    'sublevel': sublevel_num,
+                    'completed': True,
+                    'completion_percent': 100,
+                    'best_score': stats['best_score'],
+                    'attempt_count': stats['attempt_count'],
+                    'average_score': stats['avg_score'],
+                })
+            else:
+                progress_data.append({
+                    'sublevel': sublevel_num,
+                    'completed': False,
+                    'completion_percent': 0,
+                    'best_score': 0,
+                    'attempt_count': 0,
+                    'average_score': 0,
+                })
+        
+        return Response({
+            'level': level,
+            'sublevels': progress_data
+        })
 

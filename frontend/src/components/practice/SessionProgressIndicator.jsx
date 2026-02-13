@@ -25,9 +25,9 @@ function SessionProgressIndicator({
     });
 
     const levelLabels = {
-        beginner: 'Beginner',
-        intermediate: 'Intermediate',
-        advanced: 'Advanced',
+        core: 'Pronunex Core',
+        edge: 'Pronunex Edge',
+        elite: 'Pronunex Elite',
     };
 
     return (

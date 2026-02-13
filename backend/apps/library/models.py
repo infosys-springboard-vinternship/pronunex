@@ -56,9 +56,9 @@ class ReferenceSentence(models.Model):
     """
     
     DIFFICULTY_CHOICES = [
-        ('beginner', 'Beginner'),
-        ('intermediate', 'Intermediate'),
-        ('advanced', 'Advanced'),
+        ('core', 'Pronunex Core'),
+        ('edge', 'Pronunex Edge'),
+        ('elite', 'Pronunex Elite'),
     ]
     
     SOURCE_CHOICES = [
@@ -90,7 +90,13 @@ class ReferenceSentence(models.Model):
     difficulty_level = models.CharField(
         max_length=20, 
         choices=DIFFICULTY_CHOICES,
-        default='beginner'
+        default='core'
+    )
+    
+    sublevel = models.CharField(
+        max_length=10,
+        default='1',
+        help_text='Sublevel within difficulty (1 or 2)'
     )
     
     # Target phonemes for practice focus

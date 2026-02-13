@@ -194,3 +194,54 @@ class PhonemeError(models.Model):
         """Check if score is below configurable threshold."""
         threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD', 0.7)
         return self.similarity_score < threshold
+
+
+class SublevelProgress(models.Model):
+    """
+    Lightweight record of sublevel completion.
+    
+    Stores only completion summary, not individual sentence data.
+    Individual attempts are already stored in Attempt model.
+    """
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sublevel_progress'
+    )
+    DIFFICULTY_CHOICES = [
+        ('core', 'Pronunex Core'),
+        ('edge', 'Pronunex Edge'),
+        ('elite', 'Pronunex Elite'),
+    ]
+    
+    level = models.CharField(
+        max_length=20,
+        choices=DIFFICULTY_CHOICES,
+        help_text='Difficulty level: core, edge, elite'
+    )
+    sublevel = models.CharField(
+        max_length=10,
+        help_text='Sublevel identifier: 1 or 2'
+    )
+    attempts = models.IntegerField(
+        default=1,
+        help_text='Number of times this sublevel was attempted'
+    )
+    average_score = models.FloatField(
+        help_text='Average score across all 5 sentences'
+    )
+    completed = models.BooleanField(
+        default=True,
+        help_text='Whether all 5 sentences were completed'
+    )
+    completed_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Sublevel Progress'
+        verbose_name_plural = 'Sublevel Progress'
+        ordering = ['-completed_at']
+        unique_together = [['user', 'level', 'sublevel', 'completed_at']]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.level} L{self.sublevel} - {self.average_score:.2f}"

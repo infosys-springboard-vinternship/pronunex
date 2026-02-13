@@ -10,8 +10,8 @@ import './LevelSelector.css';
 
 const LEVELS = [
     {
-        key: 'beginner',
-        label: 'Beginner',
+        key: 'core',
+        label: 'Pronunex Core',
         icon: Sparkles,
         description: 'Simple words & clear pronunciation',
         details: 'Short sentences with common vocabulary. Perfect for building confidence.',
@@ -20,8 +20,8 @@ const LEVELS = [
         borderColor: 'var(--difficulty-beginner-border)',
     },
     {
-        key: 'intermediate',
-        label: 'Intermediate',
+        key: 'edge',
+        label: 'Pronunex Edge',
         icon: Zap,
         description: 'Compound sentences & stress patterns',
         details: 'Longer sentences with varied phonemes. Practice linking and rhythm.',
@@ -30,8 +30,8 @@ const LEVELS = [
         borderColor: 'var(--difficulty-intermediate-border)',
     },
     {
-        key: 'advanced',
-        label: 'Advanced',
+        key: 'elite',
+        label: 'Pronunex Elite',
         icon: Trophy,
         description: 'Complex prose, rhythm & elision',
         details: 'Natural speech patterns with reduced vowels and connected speech.',
@@ -41,7 +41,7 @@ const LEVELS = [
     },
 ];
 
-function LevelSelector({ defaultLevel = 'beginner', onSelectLevel }) {
+function LevelSelector({ defaultLevel = 'core', onSelectLevel }) {
     const [selected, setSelected] = useState(defaultLevel);
 
     const handleStart = () => {
@@ -68,7 +68,7 @@ function LevelSelector({ defaultLevel = 'beginner', onSelectLevel }) {
                         <button
                             key={level.key}
                             type="button"
-                            className={`level-selector__card level-selector__card--${level.key} ${isSelected ? 'level-selector__card--selected' : ''}`}
+                            className={`level-selector__card ${isSelected ? 'level-selector__card--selected' : ''}`}
                             onClick={() => setSelected(level.key)}
                             aria-pressed={isSelected}
                         >

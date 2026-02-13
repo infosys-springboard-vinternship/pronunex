@@ -55,7 +55,7 @@ class SentenceListView(generics.ListAPIView):
     serializer_class = ReferenceSentenceListSerializer
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['difficulty_level', 'source']
+    filterset_fields = ['difficulty_level', 'source', 'sublevel']
     search_fields = ['text']
     ordering_fields = ['created_at', 'difficulty_level']
 
@@ -104,17 +104,22 @@ class RecommendedSentencesView(APIView):
                 target_phonemes__overlap=list(weak_phonemes)
             )
         
+        sublevel = request.query_params.get('sublevel')
+        
         if difficulty:
             queryset = queryset.filter(difficulty_level=difficulty)
+        
+        if sublevel:
+            queryset = queryset.filter(sublevel=sublevel)
         
         # Fallback to difficulty-only filter if no matches with weak phonemes
         if not queryset.exists():
             queryset = ReferenceSentence.objects.filter(is_validated=True)
             if difficulty:
-                # Respect the explicit difficulty parameter
                 queryset = queryset.filter(difficulty_level=difficulty)
-            else:
-                # Fall back to user's proficiency level only if no difficulty specified
+            if sublevel:
+                queryset = queryset.filter(sublevel=sublevel)
+            if not difficulty and not sublevel:
                 queryset = queryset.filter(difficulty_level=user.proficiency_level)
         
         # Ultimate fallback: any validated sentences

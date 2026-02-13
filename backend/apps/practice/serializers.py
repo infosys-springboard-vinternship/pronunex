@@ -3,7 +3,7 @@ Serializers for practice sessions and attempts.
 """
 
 from rest_framework import serializers
-from .models import UserSession, Attempt, PhonemeError
+from .models import UserSession, Attempt, PhonemeError, SublevelProgress
 from apps.library.serializers import ReferenceSentenceListSerializer
 
 
@@ -101,3 +101,24 @@ class AssessmentResultSerializer(serializers.Serializer):
     llm_feedback = serializers.DictField()
     processing_time_ms = serializers.IntegerField()
     attempt_id = serializers.IntegerField()
+
+
+class SublevelProgressSerializer(serializers.ModelSerializer):
+    """Serializer for sublevel progress records."""
+    
+    class Meta:
+        model = SublevelProgress
+        fields = [
+            'id', 'level', 'sublevel', 'attempts', 'average_score',
+            'completed', 'completed_at'
+        ]
+        read_only_fields = ['id', 'completed_at']
+
+
+class SublevelCompleteSerializer(serializers.Serializer):
+    """Serializer for sublevel completion request."""
+    
+    level = serializers.CharField(required=True)
+    sublevel = serializers.CharField(required=True)
+    average_score = serializers.FloatField(required=True, min_value=0.0, max_value=1.0)
+    attempts = serializers.IntegerField(default=5)
