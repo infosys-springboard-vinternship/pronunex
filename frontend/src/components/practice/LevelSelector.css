@@ -1,0 +1,249 @@
+/* ============================================
+   LevelSelector — Card-based difficulty picker
+   ============================================ */
+
+.level-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 120px);
+    padding: var(--space-6);
+    animation: levelFadeIn 0.5s ease-out;
+    z-index: 1;
+    position: relative;
+}
+
+@keyframes levelFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Header */
+.level-selector__header {
+    text-align: center;
+    margin-bottom: var(--space-10);
+}
+
+.level-selector__title {
+    font-size: var(--text-4xl);
+    font-weight: var(--font-bold);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3) 0;
+    letter-spacing: var(--tracking-tight);
+}
+
+.level-selector__subtitle {
+    font-size: var(--text-lg);
+    color: var(--text-secondary);
+    margin: 0;
+    max-width: 480px;
+}
+
+/* Cards Grid */
+.level-selector__cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-6);
+    width: 100%;
+    max-width: 960px;
+    margin-bottom: var(--space-10);
+}
+
+@media (max-width: 768px) {
+    .level-selector__cards {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        gap: var(--space-4);
+    }
+
+    .level-selector__header {
+        margin-bottom: var(--space-6);
+    }
+
+    .level-selector__title {
+        font-size: var(--text-2xl);
+    }
+}
+
+/* Individual Card */
+.level-selector__card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--space-5);
+    padding: var(--space-8) var(--space-6);
+    background: var(--surface-elevated);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-2xl);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.level-selector__card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--border-secondary);
+}
+
+.level-selector__card:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}
+
+/* Selection state */
+.level-selector__card--selected {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.level-selector__card--selected.level-selector__card--beginner {
+    border-color: var(--difficulty-beginner);
+    background: var(--difficulty-beginner-bg);
+}
+
+.level-selector__card--selected.level-selector__card--intermediate {
+    border-color: var(--difficulty-intermediate);
+    background: var(--difficulty-intermediate-bg);
+}
+
+.level-selector__card--selected.level-selector__card--advanced {
+    border-color: var(--difficulty-advanced);
+    background: var(--difficulty-advanced-bg);
+}
+
+/* Check indicator */
+.level-selector__check {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    color: var(--text-tertiary);
+    transition: color var(--transition-fast);
+}
+
+.level-selector__card--selected .level-selector__check {
+    color: var(--difficulty-beginner);
+}
+
+.level-selector__card--selected.level-selector__card--intermediate .level-selector__check {
+    color: var(--difficulty-intermediate);
+}
+
+.level-selector__card--selected.level-selector__card--advanced .level-selector__check {
+    color: var(--difficulty-advanced);
+}
+
+/* Icon Ring */
+.level-selector__icon-ring {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-fast);
+}
+
+/* Color-coded icon rings */
+.level-selector__card--beginner .level-selector__icon-ring {
+    background: var(--difficulty-beginner-bg);
+    color: var(--difficulty-beginner);
+    border: 2px solid var(--difficulty-beginner-border);
+}
+
+.level-selector__card--intermediate .level-selector__icon-ring {
+    background: var(--difficulty-intermediate-bg);
+    color: var(--difficulty-intermediate);
+    border: 2px solid var(--difficulty-intermediate-border);
+}
+
+.level-selector__card--advanced .level-selector__icon-ring {
+    background: var(--difficulty-advanced-bg);
+    color: var(--difficulty-advanced);
+    border: 2px solid var(--difficulty-advanced-border);
+}
+
+/* Selected state — filled icon ring */
+.level-selector__card--selected.level-selector__card--beginner .level-selector__icon-ring {
+    background: var(--difficulty-beginner);
+    color: white;
+}
+
+.level-selector__card--selected.level-selector__card--intermediate .level-selector__icon-ring {
+    background: var(--difficulty-intermediate);
+    color: white;
+}
+
+.level-selector__card--selected.level-selector__card--advanced .level-selector__icon-ring {
+    background: var(--difficulty-advanced);
+    color: white;
+}
+
+/* Text */
+.level-selector__card-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.level-selector__card-title {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+}
+
+.level-selector__card-desc {
+    margin: 0;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-secondary);
+}
+
+.level-selector__card-details {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    line-height: var(--leading-relaxed);
+}
+
+/* Start Button */
+.level-selector__start-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-8);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: white;
+    background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-600));
+    border: none;
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: var(--shadow-md), var(--glow-primary);
+}
+
+.level-selector__start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg), var(--glow-primary);
+}
+
+.level-selector__start-btn:active {
+    transform: translateY(0);
+}
+
+.level-selector__start-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+}

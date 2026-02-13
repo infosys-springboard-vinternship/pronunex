@@ -7,3 +7,5 @@ export { default as DifficultyBadge } from './DifficultyBadge';
 export { default as MetricCard } from './MetricCard';
 export { default as RecommendationCard } from './RecommendationCard';
 export { default as ConfidenceMeter } from './ConfidenceMeter';
+export { default as LevelSelector } from './LevelSelector';
+export { default as SessionProgressIndicator } from './SessionProgressIndicator';

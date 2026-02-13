@@ -32,7 +32,7 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter } from '../components/practice';
+import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelector, SessionProgressIndicator } from '../components/practice';
 import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
@@ -194,6 +194,12 @@ export function Practice() {
     const { toast } = useUI();
     const { settings } = useSettings();
 
+    // Level selection — null means show level selector screen
+    const [selectedLevel, setSelectedLevel] = useState(() => {
+        const cached = sessionStorage.getItem('practice_selectedLevel');
+        return cached || null;
+    });
+
     // Session storage keys for state persistence
     const STORAGE_KEYS = {
         currentIndex: 'practice_currentIndex',
@@ -218,7 +224,8 @@ export function Practice() {
     };
 
     // Create a hash of current settings to detect changes
-    const settingsHash = `${settings.defaultDifficulty}_${settings.dailyGoal}`;
+    const activeDifficulty = selectedLevel || settings.defaultDifficulty;
+    const settingsHash = `${activeDifficulty}_${settings.dailyGoal}`;
     const cachedSettingsHash = sessionStorage.getItem(STORAGE_KEYS.settingsHash);
     const cachedSentenceIds = getPersistedState(STORAGE_KEYS.sentenceIds, null);
 
@@ -226,9 +233,9 @@ export function Practice() {
     const shouldUseCachedSentences = cachedSettingsHash === settingsHash && cachedSentenceIds && cachedSentenceIds.length > 0;
 
     // Build recommend URL with user preferences
-    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${settings.defaultDifficulty}&limit=${settings.dailyGoal}`;
+    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${activeDifficulty}&limit=${settings.dailyGoal}`;
     const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl, {
-        enabled: !shouldUseCachedSentences  // Only fetch if we don't have cached sentences
+        enabled: !!selectedLevel && !shouldUseCachedSentences  // Only fetch once level is chosen and no cache
     });
 
     // Use cached sentences if available, otherwise use freshly fetched ones
@@ -282,19 +289,40 @@ export function Practice() {
     const currentSentence = sentences?.[currentIndex];
 
     // Track settings changes and reset session when difficulty or daily goal changes
-    const prevSettingsRef = useRef({ defaultDifficulty: settings.defaultDifficulty, dailyGoal: settings.dailyGoal });
+    const prevSettingsRef = useRef({ defaultDifficulty: activeDifficulty, dailyGoal: settings.dailyGoal });
     useEffect(() => {
         const prevSettings = prevSettingsRef.current;
-        if (prevSettings.defaultDifficulty !== settings.defaultDifficulty ||
+        if (prevSettings.defaultDifficulty !== activeDifficulty ||
             prevSettings.dailyGoal !== settings.dailyGoal) {
             // Settings changed - clear cached session data and reset
             Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
             setCurrentIndex(0);
             setAssessment(null);
             setSessionId(null);
-            prevSettingsRef.current = { defaultDifficulty: settings.defaultDifficulty, dailyGoal: settings.dailyGoal };
+            prevSettingsRef.current = { defaultDifficulty: activeDifficulty, dailyGoal: settings.dailyGoal };
         }
-    }, [settings.defaultDifficulty, settings.dailyGoal]);
+    }, [activeDifficulty, settings.dailyGoal]);
+
+    // Persist selectedLevel to sessionStorage
+    useEffect(() => {
+        if (selectedLevel) {
+            sessionStorage.setItem('practice_selectedLevel', selectedLevel);
+        } else {
+            sessionStorage.removeItem('practice_selectedLevel');
+        }
+    }, [selectedLevel]);
+
+    // Compute completed count and average score from cached assessments
+    const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+    const completedCount = sentences.length > 0
+        ? sentences.filter(s => assessmentResults[s.id]).length
+        : 0;
+    const averageScore = completedCount > 0
+        ? sentences.reduce((sum, s) => {
+            const r = assessmentResults[s.id];
+            return sum + (r ? (r.overall_score || 0) : 0);
+        }, 0) / completedCount
+        : 0;
 
     // Persist state changes to sessionStorage
     useEffect(() => {
@@ -627,24 +655,44 @@ export function Practice() {
         cancelRecording();
     };
 
-    // Reset entire session and start fresh
+    // Reset entire session and start fresh — returns to level selector
     const handleStartFresh = async () => {
         // Clear persisted state
         Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+        sessionStorage.removeItem('practice_selectedLevel');
 
         // Reset all state
+        setSelectedLevel(null);
         setCurrentIndex(0);
         setAssessment(null);
         setAssessmentError(null);
         cancelRecording();
 
-        // Create new session
+        // Session will be created when level is selected again
+        toast.success('Session reset! Choose a new level.');
+    };
+
+    // Change level handler — goes back to level selector
+    const handleChangeLevel = () => {
+        Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
+        sessionStorage.removeItem('practice_selectedLevel');
+        setSelectedLevel(null);
+        setCurrentIndex(0);
+        setAssessment(null);
+        setAssessmentError(null);
+        cancelRecording();
+        setSentences([]);
+    };
+
+    // Handle level selection from the LevelSelector component
+    const handleLevelSelected = async (level) => {
+        setSelectedLevel(level);
+        // Create a new session
         try {
             const { data } = await api.post(ENDPOINTS.SESSIONS.CREATE, {});
             setSessionId(data.id);
-            toast.success('Started new practice session!');
         } catch (err) {
-            console.error('Failed to create new session:', err);
+            console.error('Failed to create session:', err);
         }
     };
 
@@ -728,6 +776,18 @@ export function Practice() {
         return () => audio.removeEventListener('ended', handleEnded);
     }, [audioUrl]);
 
+    // Level selector screen — shown before practice begins
+    if (!selectedLevel) {
+        return (
+            <div className="practice">
+                <LevelSelector
+                    defaultLevel={settings.defaultDifficulty}
+                    onSelectLevel={handleLevelSelected}
+                />
+            </div>
+        );
+    }
+
     // Loading state
     if (isLoading) {
         return (
@@ -769,20 +829,15 @@ export function Practice() {
         );
     }
 
-    const progressPercent = ((currentIndex + 1) / sentences.length) * 100;
-
     return (
         <div className="practice">
-            {/* Progress Header with Difficulty Badge */}
+            {/* Progress Header with Level Indicator */}
             <header className="practice__progress-header">
                 <div className="practice__progress-info">
                     <h1 className="practice__title">Practice Session</h1>
                     <span className="practice__progress-text">
                         {currentIndex + 1} of {sentences.length}
                     </span>
-                    {currentSentence?.difficulty_level && (
-                        <DifficultyBadge level={currentSentence.difficulty_level} />
-                    )}
                     {currentIndex > 0 && (
                         <button
                             type="button"
@@ -795,12 +850,14 @@ export function Practice() {
                         </button>
                     )}
                 </div>
-                <div className="practice__progress-bar-container">
-                    <div
-                        className="practice__progress-fill"
-                        style={{ width: `${progressPercent}%` }}
-                    />
-                </div>
+                <SessionProgressIndicator
+                    currentIndex={currentIndex}
+                    totalSentences={sentences.length}
+                    completedCount={completedCount}
+                    averageScore={averageScore}
+                    currentLevel={activeDifficulty}
+                    onChangeLevel={handleChangeLevel}
+                />
             </header>
 
             {/* Main Two-Column Layout */}

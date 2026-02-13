@@ -96,6 +96,17 @@
     /* Interactive elements */
     --interactive-secondary: #3a3a3a;
     --interactive-secondary-hover: #4a4a4a;
+
+    /* Dark-mode difficulty tier overrides */
+    --difficulty-beginner: #34d399;
+    --difficulty-beginner-bg: rgba(16, 185, 129, 0.12);
+    --difficulty-beginner-border: rgba(16, 185, 129, 0.25);
+    --difficulty-intermediate: #2dd4bf;
+    --difficulty-intermediate-bg: rgba(20, 184, 166, 0.12);
+    --difficulty-intermediate-border: rgba(20, 184, 166, 0.25);
+    --difficulty-advanced: #c084fc;
+    --difficulty-advanced-bg: rgba(168, 85, 247, 0.12);
+    --difficulty-advanced-border: rgba(168, 85, 247, 0.25);
 }
 
 /* ----------------------------------------
