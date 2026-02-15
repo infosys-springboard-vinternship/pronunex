@@ -5,6 +5,7 @@ Implements email-based authentication with proficiency tracking.
 """
 
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 import secrets
 
@@ -28,6 +29,11 @@ class User(AbstractUser):
         max_length=20, 
         choices=PROFICIENCY_CHOICES, 
         default='beginner'
+    )
+    daily_goal_target = models.PositiveSmallIntegerField(
+        default=10,
+        validators=[MinValueValidator(1), MaxValueValidator(50)],
+        help_text='Number of sentences the user aims to practice each day'
     )
     is_email_verified = models.BooleanField(default=False)
     avatar_id = models.CharField(

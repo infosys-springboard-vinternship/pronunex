@@ -278,7 +278,7 @@ class ApiClient {
         formData.append('audio', audioBlob, 'recording.webm');
         formData.append('sentence_id', sentenceId);
 
-        return this.post(ENDPOINTS.ASSESS, formData);
+        return this.post(ENDPOINTS.PRACTICE.ASSESS, formData);
     }
 }
 

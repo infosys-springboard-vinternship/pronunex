@@ -426,7 +426,7 @@ export function Practice() {
             if (sessionId) return;
 
             try {
-                const { data } = await api.post(ENDPOINTS.SESSIONS.CREATE, {});
+                const { data } = await api.post(ENDPOINTS.PRACTICE.SESSIONS.CREATE, {});
                 setSessionId(data.id);
             } catch (err) {
                 console.error('Failed to create session:', err);
@@ -853,7 +853,7 @@ export function Practice() {
         setShowSublevelSummary(false);
         // Create a new session
         try {
-            const { data } = await api.post(ENDPOINTS.SESSIONS.CREATE, {});
+            const { data } = await api.post(ENDPOINTS.PRACTICE.SESSIONS.CREATE, {});
             setSessionId(data.id);
         } catch (err) {
             console.error('Failed to create session:', err);

@@ -477,6 +477,7 @@ export function Dashboard() {
         weak_phonemes: stats.current_weak_phonemes || [],
         weak_phonemes_count: stats.current_weak_phonemes?.length ?? stats.weak_phonemes_count ?? 0,
         daily_goal_progress: stats.daily_goal_progress || 0,
+        daily_goal_target: stats.daily_goal_target || 10,
         weekly_scores: stats.weekly_scores || [0, 0, 0, 0, 0, 0, 0],
         weekly_labels: stats.weekly_labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     };
@@ -484,8 +485,9 @@ export function Dashboard() {
     const hasNoActivity = normalizedStats.total_attempts === 0;
     const userInitials = (user?.full_name || user?.username || 'U').charAt(0).toUpperCase();
     const userName = user?.full_name || user?.username || 'User';
-    // Use the user's settings preference for difficulty level
-    const userLevel = settings.defaultDifficulty.charAt(0).toUpperCase() + settings.defaultDifficulty.slice(1);
+    // Use computed level from analytics API (performance-based), fallback to settings
+    const computedLevel = stats.computed_level?.level || settings.defaultDifficulty || 'beginner';
+    const userLevel = computedLevel.charAt(0).toUpperCase() + computedLevel.slice(1);
 
     // Mock weak phonemes for display
     const weakPhonemes = normalizedStats.weak_phonemes.length > 0

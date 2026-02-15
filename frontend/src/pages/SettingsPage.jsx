@@ -62,7 +62,19 @@ const NumberStepper = ({ value, onChange, min = 1, max = 50, step = 5, label }) 
 const SettingsPage = () => {
     const { settings, updateSetting, resetSettings, presets } = useSettings();
     const { toast } = useUI();
-    const { logout } = useAuth();
+    const { logout, user, updateProfile } = useAuth();
+
+    const handleDailyGoalChange = async (newValue) => {
+        try {
+            await updateProfile({
+                ...user,
+                daily_goal_target: newValue
+            });
+            toast.success('Daily goal updated');
+        } catch (error) {
+            toast.error('Failed to update daily goal');
+        }
+    };
 
     const [isTesting, setIsTesting] = useState(false);
 
@@ -334,6 +346,40 @@ const SettingsPage = () => {
                                 <Mic size={16} />
                                 {isTesting ? 'Listening...' : 'Test Mic'}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* =========================================
+                Practice Section
+                ========================================= */}
+            <section className="settings__section">
+                <div className="settings__section-header">
+                    <div className="settings__section-icon settings__section-icon--practice">
+                        <Target size={20} />
+                    </div>
+                    <div className="settings__section-info">
+                        <h2>Practice Settings</h2>
+                        <p>Customize your learning goals.</p>
+                    </div>
+                </div>
+                <div className="settings__section-body">
+                    {/* Daily Goal */}
+                    <div className="settings__row">
+                        <div className="settings__row-label">
+                            <h3>Daily Goal Target</h3>
+                            <p>Number of sentences to practice daily.</p>
+                        </div>
+                        <div className="settings__row-control">
+                            <NumberStepper
+                                value={user?.daily_goal_target || 10}
+                                onChange={handleDailyGoalChange}
+                                min={5}
+                                max={50}
+                                step={5}
+                                label="sentences"
+                            />
                         </div>
                     </div>
                 </div>

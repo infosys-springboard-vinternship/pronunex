@@ -111,6 +111,10 @@ class Attempt(models.Model):
         verbose_name = 'Attempt'
         verbose_name_plural = 'Attempts'
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['session', 'created_at']),
+            models.Index(fields=['session', 'score']),
+        ]
     
     def __str__(self):
         return f"Attempt on '{self.sentence.text[:30]}...' - {self.score:.2f}"
@@ -185,6 +189,9 @@ class PhonemeError(models.Model):
         verbose_name = 'Phoneme Error'
         verbose_name_plural = 'Phoneme Errors'
         ordering = ['attempt', 'start_time']
+        indexes = [
+            models.Index(fields=['attempt', 'target_phoneme']),
+        ]
     
     def __str__(self):
         return f"/{self.target_phoneme.arpabet}/ in '{self.word_context}' - {self.similarity_score:.2f}"

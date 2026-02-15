@@ -93,6 +93,9 @@ class PhonemeProgress(models.Model):
         verbose_name_plural = 'Phoneme Progress Records'
         ordering = ['user', 'phoneme']
         unique_together = ['user', 'phoneme']
+        indexes = [
+            models.Index(fields=['user', 'current_score']),
+        ]
     
     def __str__(self):
         return f"{self.user.email} - {self.phoneme.arpabet}: {self.current_score:.2f}"

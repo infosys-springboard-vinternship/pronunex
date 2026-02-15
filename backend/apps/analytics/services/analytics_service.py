@@ -84,7 +84,22 @@ class AnalyticsService:
         for session in sessions_today:
             if session.ended_at and session.started_at:
                 delta = session.ended_at - session.started_at
-                total_minutes += delta.total_seconds() / 60
+                minutes = delta.total_seconds() / 60
+                if 0 < minutes < 180:  # Sanity: cap at 3 hours
+                    total_minutes += minutes
+            else:
+                # Fallback: estimate from attempt timestamps + processing time
+                session_attempts = Attempt.objects.filter(
+                    session=session
+                ).order_by('created_at')
+                
+                if session_attempts.exists():
+                    first = session_attempts.first().created_at
+                    last = session_attempts.last().created_at
+                    span = (last - first).total_seconds() / 60
+                    # Add ~15 seconds per attempt for recording time
+                    buffer = (session_attempts.count() * 15) / 60
+                    total_minutes += span + buffer
         
         progress.total_practice_minutes = round(total_minutes, 1)
         progress.save()

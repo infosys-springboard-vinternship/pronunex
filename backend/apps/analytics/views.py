@@ -52,6 +52,8 @@ class ProgressDashboardView(APIView):
             'weekly_scores': stats['weekly_scores'],
             'weekly_labels': stats['weekly_labels'],
             'daily_goal_progress': stats.get('daily_goal_progress', 0),
+            'daily_goal_target': stats.get('daily_goal_target', 10),
+            'computed_level': stats.get('computed_level', {}),
         }
         
         return Response(response_data)

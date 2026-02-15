@@ -140,7 +140,7 @@ class LLMService:
         return None
     
     def _call_groq(self, prompt: str, max_tokens: int, temperature: float) -> str:
-        """Call Groq API."""
+        """Call Groq API with timeout."""
         response = self.groq_client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
@@ -149,11 +149,12 @@ class LLMService:
             ],
             max_tokens=max_tokens,
             temperature=temperature,
+            timeout=10,
         )
         return response.choices[0].message.content
     
     def _call_cerebras(self, prompt: str, max_tokens: int, temperature: float) -> str:
-        """Call Cerebras API."""
+        """Call Cerebras API with timeout."""
         response = self.cerebras_client.chat.completions.create(
             model="llama-3.3-70b",
             messages=[
@@ -162,6 +163,7 @@ class LLMService:
             ],
             max_tokens=max_tokens,
             temperature=temperature,
+            timeout=10,
         )
         return response.choices[0].message.content
     

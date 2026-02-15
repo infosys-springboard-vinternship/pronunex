@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import {
     User, Mail, Globe, Award, Edit3, Save, X,
-    Calendar, Shield, CheckCircle
+    Calendar, Shield, CheckCircle, Target
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useUI } from '../context/UIContext';
@@ -41,6 +41,7 @@ export function Profile() {
         full_name: '',
         native_language: '',
         proficiency_level: 'beginner',
+        daily_goal_target: 10,
         avatar_id: 'avatar-1',
     });
 
@@ -52,6 +53,7 @@ export function Profile() {
                 full_name: user.full_name || '',
                 native_language: user.native_language || '',
                 proficiency_level: user.proficiency_level || 'beginner',
+                daily_goal_target: user.daily_goal_target || 10,
                 avatar_id: user.avatar_id || 'avatar-1',
             });
         }
@@ -74,6 +76,7 @@ export function Profile() {
                 full_name: user.full_name || '',
                 native_language: user.native_language || '',
                 proficiency_level: user.proficiency_level || 'beginner',
+                daily_goal_target: user.daily_goal_target || 10,
                 avatar_id: user.avatar_id || 'avatar-1',
             });
         }
@@ -284,6 +287,28 @@ export function Profile() {
                                     {PROFICIENCY_OPTIONS.find(
                                         (opt) => opt.value === user.proficiency_level
                                     )?.label || 'Beginner'}
+                                </p>
+                            )}
+                        </div>
+                        <div className="profile__field">
+                            <label className="profile__label">
+                                <Target size={16} style={{ marginRight: 4, verticalAlign: 'text-bottom' }} />
+                                Daily Goal (sentences)
+                            </label>
+                            {isEditing ? (
+                                <input
+                                    type="number"
+                                    name="daily_goal_target"
+                                    className="profile__input"
+                                    value={formData.daily_goal_target}
+                                    onChange={handleChange}
+                                    min={1}
+                                    max={50}
+                                    placeholder="10"
+                                />
+                            ) : (
+                                <p className="profile__value">
+                                    {user.daily_goal_target || 10} sentences per day
                                 </p>
                             )}
                         </div>

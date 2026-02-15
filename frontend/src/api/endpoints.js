@@ -54,17 +54,6 @@ export const ENDPOINTS = {
         SUBLEVEL_RECOMMENDATIONS: (sessionId) => `${BASE_PATH}/practice/sublevel-recommendations/?session_id=${sessionId}`,
         SUBLEVEL_SESSION: `${BASE_PATH}/practice/sublevel-session/`,
     },
-    SESSIONS: {
-        LIST: `${BASE_PATH}/practice/sessions/`,
-        CREATE: `${BASE_PATH}/practice/sessions/`,
-        DETAIL: (id) => `${BASE_PATH}/practice/sessions/${id}/`,
-        END: (id) => `${BASE_PATH}/practice/sessions/${id}/end/`,
-    },
-    ATTEMPTS: {
-        LIST: `${BASE_PATH}/practice/attempts/`,
-        DETAIL: (id) => `${BASE_PATH}/practice/attempts/${id}/`,
-    },
-    ASSESS: `${BASE_PATH}/practice/assess/`,
 
     // Analytics
     ANALYTICS: {
