@@ -12,6 +12,9 @@ from .views import (
     AssessmentView,
     SublevelCompleteView,
     SublevelProgressView,
+    SublevelSummaryView,
+    SublevelRecommendationView,
+    SublevelSessionView,
 )
 
 urlpatterns = [
@@ -30,4 +33,8 @@ urlpatterns = [
     # Sublevel Progress
     path('sublevel-complete/', SublevelCompleteView.as_view(), name='sublevel_complete'),
     path('sublevel-progress/', SublevelProgressView.as_view(), name='sublevel_progress'),
+    path('sublevel-summary/', SublevelSummaryView.as_view(), name='sublevel_summary'),
+    path('sublevel-recommendations/', SublevelRecommendationView.as_view(), name='sublevel_recommendations'),
+    path('sublevel-session/', SublevelSessionView.as_view(), name='sublevel_session'),
 ]
+

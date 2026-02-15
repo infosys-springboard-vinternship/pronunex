@@ -245,3 +245,66 @@ class SublevelProgress(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.level} L{self.sublevel} - {self.average_score:.2f}"
+
+
+class SublevelSession(models.Model):
+    """
+    Locks a fixed set of sentences to a user+level+sublevel combination.
+    
+    Prevents random sentence shuffling on revisit — once assigned, the same
+    sentences are returned in the same order every time until explicitly reset.
+    Also persists the user's current_index so they resume where they left off.
+    """
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='sublevel_sessions'
+    )
+    level = models.CharField(
+        max_length=20,
+        help_text='Difficulty level: core, edge, elite'
+    )
+    sublevel = models.CharField(
+        max_length=10,
+        help_text='Sublevel identifier: 1 or 2'
+    )
+    sentence_ids = models.JSONField(
+        help_text='Ordered list of sentence PKs assigned to this sublevel'
+    )
+    current_index = models.IntegerField(
+        default=0,
+        help_text='Index of the sentence the user is currently on (0-based)'
+    )
+    attempted_sentence_ids = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of sentence IDs that have been attempted (for robust progress tracking)'
+    )
+    is_completed = models.BooleanField(
+        default=False,
+        help_text='Whether the user has completed all sentences in this sublevel'
+    )
+    assessment_results = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text='Cached assessment results keyed by sentence ID'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_active_at = models.DateTimeField(
+        auto_now=True,
+        help_text='Last activity timestamp for soft locking and conflict prevention'
+    )
+    
+    class Meta:
+        verbose_name = 'Sublevel Session'
+        verbose_name_plural = 'Sublevel Sessions'
+        unique_together = [['user', 'level', 'sublevel']]
+        indexes = [
+            models.Index(fields=['user', 'level', 'sublevel']),
+            models.Index(fields=['user', 'is_completed']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.email} - {self.level} L{self.sublevel} ({len(self.sentence_ids)} sentences)"

@@ -39,6 +39,9 @@ class ApiClient {
         this.accessToken = null;
         this.refreshToken = null;
         this.onUnauthorized = null;
+        this._isRefreshing = false;
+        this._refreshPromise = null;
+        this._isLoggingOut = false;
     }
 
     /**
@@ -133,27 +136,49 @@ class ApiClient {
      * Attempt to refresh the access token
      */
     async _refreshAccessToken() {
-        if (!this.refreshToken) {
+        if (!this.refreshToken || this._isLoggingOut) {
             return false;
         }
 
-        try {
-            const response = await fetch(ENDPOINTS.AUTH.REFRESH, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh: this.refreshToken }),
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                this.accessToken = data.access;
-                return true;
-            }
-        } catch {
-            // Refresh failed
+        // Deduplicate concurrent refresh calls — share a single promise
+        if (this._isRefreshing && this._refreshPromise) {
+            return this._refreshPromise;
         }
 
-        return false;
+        this._isRefreshing = true;
+        this._refreshPromise = (async () => {
+            try {
+                const response = await fetch(ENDPOINTS.AUTH.REFRESH, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh: this.refreshToken }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.accessToken = data.access;
+                    // CRITICAL: When ROTATE_REFRESH_TOKENS is enabled,
+                    // the backend returns a new refresh token and blacklists the old one.
+                    // We MUST save the new refresh token or the next refresh will fail.
+                    if (data.refresh) {
+                        this.refreshToken = data.refresh;
+                        sessionStorage.setItem('refresh_token', data.refresh);
+                    }
+                    sessionStorage.setItem('access_token', data.access);
+                    return true;
+                }
+            } catch {
+                // Refresh failed
+            }
+            return false;
+        })();
+
+        try {
+            return await this._refreshPromise;
+        } finally {
+            this._isRefreshing = false;
+            this._refreshPromise = null;
+        }
     }
 
     /**
@@ -192,7 +217,7 @@ class ApiClient {
         }
 
         // Handle 401 with token refresh
-        if (response.status === 401 && retryOnUnauthorized) {
+        if (response.status === 401 && retryOnUnauthorized && !this._isLoggingOut) {
             const refreshed = await this._refreshAccessToken();
 
             if (refreshed) {
@@ -200,8 +225,9 @@ class ApiClient {
                 return this.request(endpoint, { ...options, retryOnUnauthorized: false });
             }
 
-            // Refresh failed, trigger unauthorized callback
-            if (this.onUnauthorized) {
+            // Refresh failed, trigger unauthorized callback (once)
+            if (this.onUnauthorized && !this._isLoggingOut) {
+                this._isLoggingOut = true;
                 this.onUnauthorized();
             }
 

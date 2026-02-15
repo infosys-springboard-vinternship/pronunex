@@ -11,3 +11,5 @@ export { default as LevelSelector } from './LevelSelector';
 export { default as SublevelSelector } from './SublevelSelector';
 export { default as SublevelSummary } from './SublevelSummary';
 export { default as SessionProgressIndicator } from './SessionProgressIndicator';
+export { default as WeakPhonemeModal } from './WeakPhonemeModal';
+export { default as ReinforcementBlock } from './ReinforcementBlock';

@@ -1,0 +1,314 @@
+/* ==============================================
+   WeakPhonemeModal - Immediate Phoneme Feedback
+   ============================================== */
+
+/* Overlay */
+.wpm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(6px);
+    animation: wpm-fade-in 0.25s ease-out;
+    padding: 1rem;
+}
+
+/* Modal Container */
+.wpm-modal {
+    background: var(--bg-primary, #fff);
+    border: 1px solid var(--border-primary, rgba(0, 0, 0, 0.08));
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.2);
+    animation: wpm-slide-up 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow: hidden;
+}
+
+/* Header */
+.wpm-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-primary, rgba(0, 0, 0, 0.06));
+}
+
+.wpm-header__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f59e0b20, #d9770620);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d97706;
+    flex-shrink: 0;
+}
+
+.wpm-header__text {
+    flex: 1;
+    min-width: 0;
+}
+
+.wpm-header__title {
+    font-size: var(--text-base, 1rem);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.wpm-header__subtitle {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-secondary);
+    margin: 0.125rem 0 0;
+}
+
+.wpm-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary, #999);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+}
+
+.wpm-close:hover {
+    background: var(--bg-secondary, #f5f5f5);
+    color: var(--text-primary);
+}
+
+/* Body - Scrollable phoneme cards */
+.wpm-body {
+    padding: 1rem 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+/* Individual Phoneme Card */
+.wpm-card {
+    background: var(--bg-secondary, #f9fafb);
+    border: 1px solid var(--border-primary, rgba(0, 0, 0, 0.06));
+    border-radius: 12px;
+    padding: 0.875rem 1rem;
+    transition: border-color 0.2s ease;
+}
+
+.wpm-card:hover {
+    border-color: #d97706;
+}
+
+.wpm-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.625rem;
+}
+
+.wpm-card__phoneme {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.wpm-card__symbol {
+    font-size: var(--text-lg, 1.125rem);
+    font-weight: 700;
+    color: #d97706;
+    font-family: 'Courier New', monospace;
+}
+
+.wpm-card__arpabet {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-tertiary, #999);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Score bar */
+.wpm-card__score {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 100px;
+}
+
+.wpm-card__score-bar {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-primary, rgba(0, 0, 0, 0.08));
+    position: relative;
+    overflow: hidden;
+}
+
+.wpm-card__score-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--score-width, 0%);
+    background: linear-gradient(90deg, #ef4444, #f59e0b);
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wpm-card__score-text {
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 30px;
+    text-align: right;
+}
+
+/* Articulation Tip */
+.wpm-card__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    background: var(--bg-primary, #fff);
+    border-radius: 8px;
+    border: 1px solid var(--border-primary, rgba(0, 0, 0, 0.04));
+    margin-bottom: 0.5rem;
+}
+
+.wpm-card__tip-icon {
+    color: #059669;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.wpm-card__tip p {
+    margin: 0;
+    font-size: var(--text-sm, 0.875rem);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Practice Words */
+.wpm-card__words {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.wpm-card__words-label {
+    font-size: var(--text-xs, 0.75rem);
+    color: var(--text-tertiary, #999);
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.wpm-card__words-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.wpm-card__word-tag {
+    display: inline-flex;
+    padding: 0.25rem 0.625rem;
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+    color: #fff;
+    font-size: var(--text-xs, 0.75rem);
+    font-weight: 500;
+    border-radius: 20px;
+    letter-spacing: 0.02em;
+}
+
+/* Footer */
+.wpm-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.625rem;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-primary, rgba(0, 0, 0, 0.06));
+}
+
+.wpm-footer__btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 8px;
+    font-size: var(--text-sm, 0.875rem);
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wpm-footer__btn--secondary {
+    background: var(--bg-secondary, #f3f4f6);
+    color: var(--text-primary);
+}
+
+.wpm-footer__btn--secondary:hover {
+    background: var(--border-primary, #e5e7eb);
+}
+
+.wpm-footer__btn--primary {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(217, 119, 6, 0.3);
+}
+
+.wpm-footer__btn--primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+}
+
+/* Animations */
+@keyframes wpm-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes wpm-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Responsive */
+@media (max-width: 520px) {
+    .wpm-modal {
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: 12px;
+    }
+
+    .wpm-header,
+    .wpm-body,
+    .wpm-footer {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}

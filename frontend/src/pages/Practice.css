@@ -971,3 +971,79 @@
 [data-theme='dark'] .practice__weak-phoneme-score {
     color: #fca5a5;
 }
+
+/* ==============================================
+   Sublevel Summary Page - Two Column Layout
+   Premium gradient background matching project design
+   ============================================== */
+.sublevel-summary-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    height: calc(100vh - 60px);
+    padding: 1.5rem;
+    background: linear-gradient(135deg,
+            #fafafa 0%,
+            #f0fdfa 40%,
+            #f5f5f5 100%);
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+}
+
+.sublevel-summary-page__left {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+}
+
+.sublevel-summary-page__left::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sublevel-summary-page__left::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.sublevel-summary-page__right {
+    display: flex;
+    align-items: stretch;
+    overflow: hidden;
+}
+
+/* Loading spinner in left column */
+.sublevel-summary-page__loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 0.75rem;
+}
+
+.sublevel-summary-page__loading p {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+/* Dark theme */
+[data-theme='dark'] .sublevel-summary-page {
+    background: linear-gradient(135deg,
+            #171717 0%,
+            #1a2e2b 40%,
+            #1c1c1c 100%);
+}
+
+/* Responsive: stack on narrow screens */
+@media (max-width: 900px) {
+    .sublevel-summary-page {
+        grid-template-columns: 1fr;
+        height: auto;
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+    }
+}

@@ -24,7 +24,7 @@ import {
     Check,
     X
 } from 'lucide-react';
-import { useApi, useMutation } from '../hooks/useApi';
+import { useMutation } from '../hooks/useApi';
 import { useUI } from '../context/UIContext';
 import { useSettings } from '../context/SettingsContext';
 import { api } from '../api/client';
@@ -32,7 +32,7 @@ import { ENDPOINTS } from '../api/endpoints';
 import { Spinner } from '../components/Loader';
 import { ErrorState } from '../components/ErrorState';
 import { EmptyState } from '../components/EmptyState';
-import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelector, SublevelSelector, SublevelSummary, SessionProgressIndicator } from '../components/practice';
+import { DifficultyBadge, MetricCard, RecommendationCard, ConfidenceMeter, LevelSelector, SublevelSelector, SublevelSummary, SessionProgressIndicator, ReinforcementBlock } from '../components/practice';
 import { InsightsPanel } from '../components/practice/insights/InsightsPanel';
 import { ComparisonVisualizer } from '../components/practice/insights/ComparisonVisualizer';
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
@@ -196,80 +196,39 @@ export function Practice() {
 
     // Level selection — null means show level selector screen
     const [selectedLevel, setSelectedLevel] = useState(() => {
-        const cached = sessionStorage.getItem('practice_selectedLevel');
+        const cached = localStorage.getItem('practice_selectedLevel');
         return cached || null;
     });
 
     // Sublevel selection — null means show sublevel selector screen
     const [selectedSublevel, setSelectedSublevel] = useState(() => {
-        const cached = sessionStorage.getItem('practice_selectedSublevel');
+        const cached = localStorage.getItem('practice_selectedSublevel');
         return cached || null;
     });
 
     // Sublevel summary state
     const [showSublevelSummary, setShowSublevelSummary] = useState(false);
 
-    // Session storage keys for state persistence
-    const STORAGE_KEYS = {
-        currentIndex: 'practice_currentIndex',
-        sessionId: 'practice_sessionId',
-        assessment: 'practice_assessment',
-        sentenceIds: 'practice_sentenceIds',  // Cache sentence order
-        assessmentResults: 'practice_assessmentResults',  // Cache all assessments by sentence ID
-        settingsHash: 'practice_settingsHash',  // Track if settings changed
-        sublevelSummaryShown: 'practice_sublevelSummaryShown',  // Track if summary was shown
-    };
+    // Backend sublevel session ID (tracks the SublevelSession record)
+    const [sublevelSessionId, setSublevelSessionId] = useState(null);
 
-    // Load persisted state from sessionStorage
-    const getPersistedState = (key, defaultValue) => {
-        try {
-            const stored = sessionStorage.getItem(key);
-            if (stored !== null) {
-                return JSON.parse(stored);
-            }
-        } catch (e) {
-            console.warn(`Failed to load ${key} from storage:`, e);
-        }
-        return defaultValue;
-    };
+    // Loading/error state for sublevel session fetch
+    const [isLoadingSession, setIsLoadingSession] = useState(false);
+    const [sessionError, setSessionError] = useState(null);
 
-    // Create a hash of current settings to detect changes
+    // Sentences and assessment state
+    const [sentences, setSentences] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
+
     const activeDifficulty = selectedLevel || settings.defaultDifficulty;
-    const settingsHash = `${activeDifficulty}_${selectedSublevel || ''}_${settings.dailyGoal}`;
-    const cachedSettingsHash = sessionStorage.getItem(STORAGE_KEYS.settingsHash);
-    const cachedSentenceIds = getPersistedState(STORAGE_KEYS.sentenceIds, null);
-
-    // Check if we should use cached sentences or fetch fresh ones
-    const shouldUseCachedSentences = cachedSettingsHash === settingsHash && cachedSentenceIds && cachedSentenceIds.length > 0;
-
-    // Build recommend URL with user preferences (including sublevel)
-    const recommendUrl = `${ENDPOINTS.SENTENCES.RECOMMEND}?difficulty=${activeDifficulty}&sublevel=${selectedSublevel || '1'}&limit=5`;
-    const { data: sentencesData, isLoading, error, refetch } = useApi(recommendUrl, {
-        enabled: !!selectedLevel && !!selectedSublevel && !shouldUseCachedSentences  // Only fetch once level AND sublevel are chosen
-    });
-
-    // Use cached sentences if available, otherwise use freshly fetched ones
-    const [sentences, setSentences] = useState(() => {
-        if (shouldUseCachedSentences) {
-            // Will be populated from cache in useEffect
-            return [];
-        }
-        return sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
-    });
 
     const { mutate, isLoading: isAssessing } = useMutation();
 
-
-    // Initialize state with persisted values
-    const [currentIndex, setCurrentIndex] = useState(() =>
-        getPersistedState(STORAGE_KEYS.currentIndex, 0)
-    );
-    const [assessment, setAssessment] = useState(() =>
-        getPersistedState(STORAGE_KEYS.assessment, null)
-    );
-    const [sessionId, setSessionId] = useState(() =>
-        getPersistedState(STORAGE_KEYS.sessionId, null)
-    );
+    // State
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [assessment, setAssessment] = useState(null);
+    const [sessionId, setSessionId] = useState(null);
 
     // Recording state (not persisted - audio blobs can't be stored)
     const [isRecording, setIsRecording] = useState(false);
@@ -280,6 +239,14 @@ export function Practice() {
     const [audioStream, setAudioStream] = useState(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [assessmentError, setAssessmentError] = useState(null); // For content_mismatch/unscorable errors
+
+    // Sublevel reinforcement state (Feature 2)
+    const [sublevelRecommendations, setSublevelRecommendations] = useState(null);
+    const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+
+    // Weak-set practice mode — practice recommended sentences for weak phonemes
+    const [isWeakSetMode, setIsWeakSetMode] = useState(false);
+    const [weakSetOriginalSentences, setWeakSetOriginalSentences] = useState([]);
 
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -298,70 +265,139 @@ export function Practice() {
     const maxDuration = 30;
     const currentSentence = sentences?.[currentIndex];
 
-    // Track settings changes and reset session when difficulty, sublevel, or daily goal changes
-    const prevSettingsRef = useRef({ defaultDifficulty: activeDifficulty, sublevel: selectedSublevel, dailyGoal: settings.dailyGoal });
-    useEffect(() => {
-        const prevSettings = prevSettingsRef.current;
-        if (prevSettings.defaultDifficulty !== activeDifficulty ||
-            prevSettings.sublevel !== selectedSublevel ||
-            prevSettings.dailyGoal !== settings.dailyGoal) {
-            // Settings changed - clear cached session data and reset
-            Object.values(STORAGE_KEYS).forEach(key => {
-                if (key !== 'practice_selectedLevel' && key !== 'practice_selectedSublevel') {
-                    sessionStorage.removeItem(key);
-                }
-            });
-            setCurrentIndex(0);
-            setAssessment(null);
-            setSessionId(null);
-            prevSettingsRef.current = { defaultDifficulty: activeDifficulty, sublevel: selectedSublevel, dailyGoal: settings.dailyGoal };
-        }
-    }, [activeDifficulty, selectedSublevel, settings.dailyGoal]);
-
-    // Persist selectedLevel to sessionStorage
+    // Persist selectedLevel to localStorage
     useEffect(() => {
         if (selectedLevel) {
-            sessionStorage.setItem('practice_selectedLevel', selectedLevel);
+            localStorage.setItem('practice_selectedLevel', selectedLevel);
         } else {
-            sessionStorage.removeItem('practice_selectedLevel');
+            localStorage.removeItem('practice_selectedLevel');
         }
     }, [selectedLevel]);
 
-    // Persist selectedSublevel to sessionStorage
+    // Persist selectedSublevel to localStorage
     useEffect(() => {
         if (selectedSublevel) {
-            sessionStorage.setItem('practice_selectedSublevel', selectedSublevel);
+            localStorage.setItem('practice_selectedSublevel', selectedSublevel);
         } else {
-            sessionStorage.removeItem('practice_selectedSublevel');
+            localStorage.removeItem('practice_selectedSublevel');
         }
     }, [selectedSublevel]);
 
-    // Compute completed count and average score from cached assessments
-    const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
+    // --- Backend Sublevel Session: fetch fixed sentences on level+sublevel selection ---
+    const fetchSublevelSession = async (level, sublevel) => {
+        if (!level || !sublevel) return;
+
+        setIsLoading(true);
+        setError(null);
+        setSessionError(null);
+
+        try {
+            const url = `${ENDPOINTS.PRACTICE.SUBLEVEL_SESSION}?level=${level}&sublevel=${sublevel}`;
+            const { data } = await api.get(url);
+
+            // data contains: { id, sentences, sentence_ids, current_index, assessment_results }
+            setSublevelSessionId(data.id);
+            setSentences(data.sentences || []);
+            setCurrentIndex(data.current_index || 0);
+
+            // Restore backend assessment results
+            const cachedResults = data.assessment_results || {};
+            setBackendAssessmentResults(cachedResults);
+
+            // Check if all sentences are already completed → show summary
+            const sentenceIds = data.sentence_ids || [];
+            const allCompleted = sentenceIds.length > 0 && sentenceIds.every(id => cachedResults[String(id)]);
+
+            if (allCompleted) {
+                // Sublevel already finished — go straight to summary
+                setShowSublevelSummary(true);
+
+                // Re-fetch reinforcement recommendations for the summary page
+                setIsLoadingRecommendations(true);
+                api.get(ENDPOINTS.PRACTICE.SUBLEVEL_SUMMARY(level, sublevel))
+                    .then(res => { if (res?.data) setSublevelRecommendations(res.data); })
+                    .catch(err => console.warn('Failed to fetch recommendations on revisit:', err))
+                    .finally(() => setIsLoadingRecommendations(false));
+            } else {
+                // Restore cached assessment for current sentence
+                const currentSid = sentenceIds[data.current_index || 0];
+                if (currentSid && cachedResults[String(currentSid)]) {
+                    setAssessment(cachedResults[String(currentSid)]);
+                } else {
+                    setAssessment(null);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch sublevel session:', err);
+            setError(err);
+            setSessionError('Failed to load practice sentences.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Fetch sublevel session when both level and sublevel are selected
+    useEffect(() => {
+        if (selectedLevel && selectedSublevel) {
+            fetchSublevelSession(selectedLevel, selectedSublevel);
+        }
+    }, [selectedLevel, selectedSublevel]);
+
+    // Save progress to backend (current_index + assessment_results)
+    // Skips saving if in weak-set mode (no SublevelSession for weak sets)
+    const saveProgressToBackend = async (index, assessmentResultsUpdate) => {
+        if (isWeakSetMode) return; // Weak-set mode — assessments saved via uploadAudio
+        if (!sublevelSessionId || !selectedLevel || !selectedSublevel) return;
+
+        try {
+            const payload = {
+                level: selectedLevel,
+                sublevel: selectedSublevel,
+            };
+            if (index !== undefined) {
+                payload.current_index = index;
+            }
+            if (assessmentResultsUpdate) {
+                payload.assessment_results = assessmentResultsUpdate;
+            }
+            await api.patch(ENDPOINTS.PRACTICE.SUBLEVEL_SESSION, payload);
+        } catch (err) {
+            console.warn('Failed to save progress to backend:', err);
+        }
+    };
+
+    // Compute completed count and average score from backend-persisted assessment results
+    const [backendAssessmentResults, setBackendAssessmentResults] = useState({});
+
+    // Load assessment results from backend session when sentences arrive
+    useEffect(() => {
+        if (sublevelSessionId && selectedLevel && selectedSublevel) {
+            const loadResults = async () => {
+                try {
+                    const url = `${ENDPOINTS.PRACTICE.SUBLEVEL_SESSION}?level=${selectedLevel}&sublevel=${selectedSublevel}`;
+                    const { data } = await api.get(url);
+                    setBackendAssessmentResults(data.assessment_results || {});
+                } catch (err) {
+                    // Silent — results already loaded from initial fetch
+                }
+            };
+            // Only re-load if we don't have results yet
+            if (Object.keys(backendAssessmentResults).length === 0) {
+                loadResults();
+            }
+        }
+    }, [sublevelSessionId]);
+
+    const assessmentResults = backendAssessmentResults;
     const completedCount = sentences.length > 0
-        ? sentences.filter(s => assessmentResults[s.id]).length
+        ? sentences.filter(s => assessmentResults[String(s.id)]).length
         : 0;
     const averageScore = completedCount > 0
         ? sentences.reduce((sum, s) => {
-            const r = assessmentResults[s.id];
+            const r = assessmentResults[String(s.id)];
             return sum + (r ? (r.overall_score || 0) : 0);
         }, 0) / completedCount
         : 0;
-
-    // Persist state changes to sessionStorage
-    useEffect(() => {
-        sessionStorage.setItem(STORAGE_KEYS.currentIndex, JSON.stringify(currentIndex));
-    }, [currentIndex]);
-
-    useEffect(() => {
-        if (sessionId !== null) {
-            sessionStorage.setItem(STORAGE_KEYS.sessionId, JSON.stringify(sessionId));
-        }
-    }, [sessionId]);
-
-    useEffect(() => {
-        sessionStorage.setItem(STORAGE_KEYS.assessment, JSON.stringify(assessment));
-    }, [assessment]);
 
     // Validate currentIndex against loaded sentences
     useEffect(() => {
@@ -370,67 +406,17 @@ export function Practice() {
         }
     }, [sentences, currentIndex]);
 
-    // Cache sentences when freshly fetched from API
-    useEffect(() => {
-        if (sentencesData && !shouldUseCachedSentences) {
-            const newSentences = sentencesData?.recommendations || (Array.isArray(sentencesData) ? sentencesData : []);
-            if (newSentences.length > 0) {
-                // Update sentences state
-                setSentences(newSentences);
-
-                // Cache sentence IDs for future loads
-                const sentenceIds = newSentences.map(s => s.id);
-                sessionStorage.setItem(STORAGE_KEYS.sentenceIds, JSON.stringify(sentenceIds));
-
-                // Save current settings hash
-                sessionStorage.setItem(STORAGE_KEYS.settingsHash, settingsHash);
-            }
-        }
-    }, [sentencesData, shouldUseCachedSentences, settingsHash]);
-
-    // Load sentences from cache if available
-    useEffect(() => {
-        const loadCachedSentences = async () => {
-            if (shouldUseCachedSentences && sentences.length === 0 && cachedSentenceIds) {
-                try {
-                    // Fetch sentences by their IDs in the cached order
-                    const token = sessionStorage.getItem('access_token');
-                    const cachedSentencesPromises = cachedSentenceIds.map(id =>
-                        fetch(`${ENDPOINTS.SENTENCES.DETAIL(id)}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                        }).then(res => res.json())
-                    );
-
-                    const cachedSentencesData = await Promise.all(cachedSentencesPromises);
-                    setSentences(cachedSentencesData);
-                } catch (err) {
-                    console.error('Failed to load cached sentences:', err);
-                    // If cache loading fails, trigger a refetch
-                    sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
-                    sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
-                    refetch();
-                }
-            }
-        };
-
-        loadCachedSentences();
-    }, [shouldUseCachedSentences, sentences.length, cachedSentenceIds]);
-
-    // Load assessment result for current sentence from cache when navigating
+    // Load assessment result for current sentence from backend cache when navigating
     useEffect(() => {
         if (currentSentence) {
-            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
-            const cachedAssessment = assessmentResults[currentSentence.id];
-
+            const cachedAssessment = backendAssessmentResults[String(currentSentence.id)];
             if (cachedAssessment) {
-                // Load previously saved assessment
                 setAssessment(cachedAssessment);
             } else {
-                // No cached assessment for this sentence
                 setAssessment(null);
             }
         }
-    }, [currentSentence?.id]);
+    }, [currentSentence?.id, backendAssessmentResults]);
 
 
     // Create session on mount (only if no persisted session)
@@ -551,17 +537,26 @@ export function Practice() {
 
     // Stop recording
     const stopRecording = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-            }
         }
     };
 
     // Cancel/retry recording
     const cancelRecording = () => {
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+            timerRef.current = null;
+        }
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
         if (audioUrl) {
             URL.revokeObjectURL(audioUrl);
         }
@@ -570,6 +565,16 @@ export function Practice() {
         setHasRecording(false);
         setDuration(0);
     };
+
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+                timerRef.current = null;
+            }
+        };
+    }, []);
 
     // Toggle playback
     const togglePlayback = () => {
@@ -627,10 +632,79 @@ export function Practice() {
             setAssessment(data);
             toast.success('Assessment complete!');
 
-            // Cache this assessment result for this sentence
-            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
-            assessmentResults[currentSentence.id] = data;
-            sessionStorage.setItem(STORAGE_KEYS.assessmentResults, JSON.stringify(assessmentResults));
+            // Cache this assessment result for this sentence on backend
+            const resultUpdate = { [String(currentSentence.id)]: data };
+            setBackendAssessmentResults(prev => ({ ...prev, ...resultUpdate }));
+            await saveProgressToBackend(currentIndex, resultUpdate);
+
+            // Check if all 5 sentences are now completed → auto-trigger sublevel summary
+            const completedCount = sentences ? sentences.filter(s => {
+                const rid = String(s.id);
+                return resultUpdate[rid] || backendAssessmentResults[rid];
+            }).length : 0;
+            if (completedCount >= (sentences?.length || 5)) {
+                // Calculate average score across all sentences
+                const mergedResults = { ...backendAssessmentResults, ...resultUpdate };
+                const totalScore = sentences.reduce((sum, s) => {
+                    const result = mergedResults[String(s.id)];
+                    return sum + (result?.overall_score || 0);
+                }, 0);
+                const avgScore = totalScore / sentences.length;
+
+                if (isWeakSetMode) {
+                    // Weak-set completion — don't re-post SUBLEVEL_COMPLETE
+                    // Just show the summary after a brief delay
+                    setTimeout(() => {
+                        setShowSublevelSummary(true);
+                        setIsWeakSetMode(false);
+                        // Restore original sentences for the summary view
+                        if (weakSetOriginalSentences.length > 0) {
+                            setSentences(weakSetOriginalSentences);
+                            setWeakSetOriginalSentences([]);
+                        }
+                        // Re-fetch fresh recommendations
+                        setIsLoadingRecommendations(true);
+                        api.get(ENDPOINTS.PRACTICE.SUBLEVEL_SUMMARY(selectedLevel, selectedSublevel))
+                            .then(res => { if (res?.data) setSublevelRecommendations(res.data); })
+                            .catch(err => console.warn('Failed to fetch summary:', err))
+                            .finally(() => setIsLoadingRecommendations(false));
+                        // Re-fetch session results
+                        fetchSublevelSession(selectedLevel, selectedSublevel);
+                    }, 2500);
+                    toast.success(`Weak set complete! Average: ${Math.round(avgScore * 100)}%`);
+                    return;
+                }
+
+                // Save sublevel completion to backend
+                try {
+                    await api.post(ENDPOINTS.PRACTICE.SUBLEVEL_COMPLETE, {
+                        level: selectedLevel,
+                        sublevel: selectedSublevel,
+                        average_score: avgScore,
+                        attempts: sentences.length,
+                    });
+                } catch (err) {
+                    console.error('Failed to save sublevel completion:', err);
+                }
+
+                // Show sublevel summary after a brief delay to show final result
+                setTimeout(() => {
+                    setShowSublevelSummary(true);
+
+                    // Fetch sublevel summary with reinforcement sentences
+                    setIsLoadingRecommendations(true);
+                    api.get(ENDPOINTS.PRACTICE.SUBLEVEL_SUMMARY(selectedLevel, selectedSublevel))
+                        .then(summaryResponse => {
+                            if (summaryResponse?.data) {
+                                setSublevelRecommendations(summaryResponse.data);
+                            }
+                        })
+                        .catch(summaryErr => console.warn('Failed to fetch sublevel summary:', summaryErr))
+                        .finally(() => setIsLoadingRecommendations(false));
+                }, 2500);
+
+                return; // Don't auto-advance, summary will show
+            }
 
             // Auto-advance to next sentence if enabled and score is good
             if (settings.autoAdvance && data.overall_score >= 0.7 && currentIndex < (sentences?.length || 0) - 1) {
@@ -650,19 +724,21 @@ export function Practice() {
     // Navigation handlers
     const handleNext = async () => {
         if (currentIndex < (sentences?.length || 0) - 1) {
-            setCurrentIndex(prev => prev + 1);
+            const nextIndex = currentIndex + 1;
+            setCurrentIndex(nextIndex);
+            // Persist current_index to backend
+            saveProgressToBackend(nextIndex);
             // Assessment will be auto-loaded from cache via useEffect
             setAssessmentError(null);
             cancelRecording();
         } else {
             // Last sentence completed - show sublevel summary
-            const results = getPersistedState(STORAGE_KEYS.assessmentResults, {});
-            const completedSentences = sentences.filter(s => results[s.id]);
-            
-            if (completedSentences.length === 5) {
+            const completedSentences = sentences.filter(s => backendAssessmentResults[String(s.id)]);
+
+            if (completedSentences.length === sentences.length) {
                 // Calculate average score
                 const totalScore = completedSentences.reduce((sum, s) => {
-                    const result = results[s.id];
+                    const result = backendAssessmentResults[String(s.id)];
                     return sum + (result.overall_score || 0);
                 }, 0);
                 const avgScore = totalScore / completedSentences.length;
@@ -673,7 +749,7 @@ export function Practice() {
                         level: selectedLevel,
                         sublevel: selectedSublevel,
                         average_score: avgScore,
-                        attempts: 5
+                        attempts: sentences.length
                     });
                 } catch (err) {
                     console.error('Failed to save sublevel completion:', err);
@@ -681,13 +757,29 @@ export function Practice() {
 
                 // Show summary
                 setShowSublevelSummary(true);
+
+                // Fetch sublevel summary with reinforcement sentences
+                setIsLoadingRecommendations(true);
+                try {
+                    const summaryResponse = await api.get(ENDPOINTS.PRACTICE.SUBLEVEL_SUMMARY(selectedLevel, selectedSublevel));
+                    if (summaryResponse?.data) {
+                        setSublevelRecommendations(summaryResponse.data);
+                    }
+                } catch (summaryErr) {
+                    console.warn('Failed to fetch sublevel summary:', summaryErr);
+                } finally {
+                    setIsLoadingRecommendations(false);
+                }
             }
         }
     };
 
     const handlePrevious = () => {
         if (currentIndex > 0) {
-            setCurrentIndex(prev => prev - 1);
+            const prevIndex = currentIndex - 1;
+            setCurrentIndex(prevIndex);
+            // Persist current_index to backend
+            saveProgressToBackend(prevIndex);
             // Assessment will be auto-loaded from cache via useEffect
             setAssessmentError(null);
             cancelRecording();
@@ -695,11 +787,16 @@ export function Practice() {
     };
 
     const handleTryAgain = () => {
-        // Clear current sentence's cached assessment
+        // Clear current sentence's cached assessment from backend results
         if (currentSentence) {
-            const assessmentResults = getPersistedState(STORAGE_KEYS.assessmentResults, {});
-            delete assessmentResults[currentSentence.id];
-            sessionStorage.setItem(STORAGE_KEYS.assessmentResults, JSON.stringify(assessmentResults));
+            const sid = String(currentSentence.id);
+            setBackendAssessmentResults(prev => {
+                const updated = { ...prev };
+                delete updated[sid];
+                return updated;
+            });
+            // Note: we don't persist the deletion to backend — the new result
+            // will overwrite when they re-record
         }
 
         setAssessment(null);
@@ -707,18 +804,27 @@ export function Practice() {
         cancelRecording();
     };
 
-    // Reset entire session and start fresh — returns to level selector
-    const handleStartFresh = async () => {
-        // Clear persisted state
-        Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
-        sessionStorage.removeItem('practice_selectedLevel');
-
-        // Reset all state
-        setSelectedLevel(null);
+    // Reset practice state — shared helper for level/sublevel changes
+    const resetPracticeState = () => {
         setCurrentIndex(0);
         setAssessment(null);
         setAssessmentError(null);
         cancelRecording();
+        setSentences([]);
+        setSublevelSessionId(null);
+        setBackendAssessmentResults({});
+    };
+
+    // Reset entire session and start fresh — returns to level selector
+    const handleStartFresh = async () => {
+        // Clear localStorage keys
+        localStorage.removeItem('practice_selectedLevel');
+        localStorage.removeItem('practice_selectedSublevel');
+
+        // Reset all state
+        setSelectedLevel(null);
+        setSelectedSublevel(null);
+        resetPracticeState();
 
         // Session will be created when level is selected again
         toast.success('Session reset! Choose a new level.');
@@ -726,16 +832,11 @@ export function Practice() {
 
     // Change level handler — goes back to level selector
     const handleChangeLevel = () => {
-        Object.values(STORAGE_KEYS).forEach(key => sessionStorage.removeItem(key));
-        sessionStorage.removeItem('practice_selectedLevel');
-        sessionStorage.removeItem('practice_selectedSublevel');
+        localStorage.removeItem('practice_selectedLevel');
+        localStorage.removeItem('practice_selectedSublevel');
         setSelectedLevel(null);
         setSelectedSublevel(null);
-        setCurrentIndex(0);
-        setAssessment(null);
-        setAssessmentError(null);
-        cancelRecording();
-        setSentences([]);
+        resetPracticeState();
     };
 
     // Handle level selection from the LevelSelector component
@@ -760,27 +861,76 @@ export function Practice() {
     };
 
     // Handle retry sublevel from summary
-    const handleRetrySublevel = () => {
+    const handleRetrySublevel = async () => {
         setShowSublevelSummary(false);
+
+        // Delete the backend sublevel session to reset sentence assignment
+        try {
+            await api.delete(`${ENDPOINTS.PRACTICE.SUBLEVEL_SESSION}?level=${selectedLevel}&sublevel=${selectedSublevel}`);
+        } catch (err) {
+            console.warn('Failed to reset sublevel session:', err);
+        }
+
+        // Reset local state and re-fetch fresh sentences from backend
         resetPracticeState();
-        // Clear cached results
-        sessionStorage.removeItem(STORAGE_KEYS.assessmentResults);
-        sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
-        sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
-        // Refetch sentences
-        refetch();
+        fetchSublevelSession(selectedLevel, selectedSublevel);
     };
 
     // Handle next sublevel from summary
-    const handleNextSublevel = () => {
+    const handleNextSublevel = async () => {
         setShowSublevelSummary(false);
+        setIsWeakSetMode(false);
         const nextSublevel = selectedSublevel === '1' ? '2' : '1';
         setSelectedSublevel(nextSublevel);
         resetPracticeState();
-        // Clear cached results
-        sessionStorage.removeItem(STORAGE_KEYS.assessmentResults);
-        sessionStorage.removeItem(STORAGE_KEYS.sentenceIds);
-        sessionStorage.removeItem(STORAGE_KEYS.settingsHash);
+        // Sentences will be auto-fetched via useEffect when selectedSublevel changes
+    };
+
+    // Handle "Practice Weak Set" — load recommended sentences into practice flow
+    const handlePracticeWeakSet = () => {
+        if (!sublevelRecommendations?.reinforcement_sentences?.length) {
+            toast.error('No weak-set sentences available.');
+            return;
+        }
+
+        // Save the original sentences so we can go back to the summary
+        setWeakSetOriginalSentences(sentences);
+
+        // Load the recommended sentences as the practice set
+        const weakSentences = sublevelRecommendations.reinforcement_sentences;
+        setSentences(weakSentences);
+        setCurrentIndex(0);
+        setAssessment(null);
+        setAssessmentError(null);
+        setBackendAssessmentResults({});
+        cancelRecording();
+
+        // Enter weak-set mode
+        setIsWeakSetMode(true);
+        setShowSublevelSummary(false);
+
+        toast.success(`Practicing ${weakSentences.length} weak phoneme sentences`);
+    };
+
+    // Handle returning from weak-set practice to summary
+    const handleBackFromWeakSet = () => {
+        // Restore original sentences
+        if (weakSetOriginalSentences.length > 0) {
+            setSentences(weakSetOriginalSentences);
+        }
+        setIsWeakSetMode(false);
+        setShowSublevelSummary(true);
+        setWeakSetOriginalSentences([]);
+        setCurrentIndex(0);
+        setAssessment(null);
+        setAssessmentError(null);
+        cancelRecording();
+        setBackendAssessmentResults({});
+
+        // Re-fetch the original session's assessment results
+        if (selectedLevel && selectedSublevel) {
+            fetchSublevelSession(selectedLevel, selectedSublevel);
+        }
     };
 
     // Play reference audio (TTS) - uses cached audio for instant playback
@@ -890,24 +1040,24 @@ export function Practice() {
 
     // Sublevel summary screen — shown after completing all 5 sentences
     if (showSublevelSummary) {
-        const results = getPersistedState(STORAGE_KEYS.assessmentResults, {});
-        const completedSentences = sentences.filter(s => results[s.id]);
-        
+        const results = backendAssessmentResults;
+        const completedSentences = sentences.filter(s => results[String(s.id)]);
+
         // Calculate stats
         const totalScore = completedSentences.reduce((sum, s) => {
-            return sum + (results[s.id]?.overall_score || 0);
+            return sum + (results[String(s.id)]?.overall_score || 0);
         }, 0);
         const avgScore = totalScore / Math.max(completedSentences.length, 1);
 
         // Collect all weak phonemes
         const allWeakPhonemes = [];
         completedSentences.forEach(s => {
-            const result = results[s.id];
+            const result = results[String(s.id)];
             if (result?.weak_phonemes) {
                 allWeakPhonemes.push(...result.weak_phonemes);
             }
         });
-        
+
         // Find most common weak phoneme (focus area)
         const phonemeCounts = {};
         allWeakPhonemes.forEach(p => {
@@ -915,16 +1065,47 @@ export function Practice() {
         });
         const uniqueWeakPhonemes = Object.keys(phonemeCounts).sort((a, b) => phonemeCounts[b] - phonemeCounts[a]);
 
+        // Back handler — go to sublevel selector
+        const handleBackFromSummary = () => {
+            setShowSublevelSummary(false);
+            setSelectedSublevel(null);
+            resetPracticeState();
+        };
+
         return (
-            <SublevelSummary
-                level={selectedLevel}
-                sublevel={selectedSublevel}
-                averageScore={avgScore}
-                weakPhonemes={uniqueWeakPhonemes}
-                totalAttempts={completedSentences.length}
-                onRetry={handleRetrySublevel}
-                onNext={handleNextSublevel}
-            />
+            <div className="sublevel-summary-page">
+                {/* Left column: Targeted Reinforcement */}
+                <div className="sublevel-summary-page__left">
+                    {!isLoadingRecommendations && sublevelRecommendations?.weak_phonemes?.length > 0 && (
+                        <ReinforcementBlock
+                            weakPhonemes={sublevelRecommendations.weak_phonemes}
+                            recommendedSentences={sublevelRecommendations.reinforcement_sentences || []}
+                            onPracticeSet={handlePracticeWeakSet}
+                            onSkip={handleNextSublevel}
+                        />
+                    )}
+                    {isLoadingRecommendations && (
+                        <div className="sublevel-summary-page__loading">
+                            <Spinner size="sm" />
+                            <p>Loading recommendations...</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Right column: Summary Card */}
+                <div className="sublevel-summary-page__right">
+                    <SublevelSummary
+                        level={selectedLevel}
+                        sublevel={selectedSublevel}
+                        averageScore={avgScore}
+                        weakPhonemes={uniqueWeakPhonemes}
+                        totalAttempts={completedSentences.length}
+                        onRetry={handleRetrySublevel}
+                        onNext={handleNextSublevel}
+                        onBack={handleBackFromSummary}
+                    />
+                </div>
+            </div>
         );
     }
 
@@ -946,7 +1127,7 @@ export function Practice() {
                     icon="server"
                     title="Failed to load sentences"
                     message="We could not load practice sentences. Please try again."
-                    onRetry={refetch}
+                    onRetry={() => fetchSublevelSession(selectedLevel, selectedSublevel)}
                 />
             </div>
         );
@@ -974,11 +1155,23 @@ export function Practice() {
             {/* Progress Header with Level Indicator */}
             <header className="practice__progress-header">
                 <div className="practice__progress-info">
-                    <h1 className="practice__title">Practice Session</h1>
+                    <h1 className="practice__title">
+                        {isWeakSetMode ? 'Weak Phoneme Practice' : 'Practice Session'}
+                    </h1>
                     <span className="practice__progress-text">
                         {currentIndex + 1} of {sentences.length}
                     </span>
-                    {currentIndex > 0 && (
+                    {isWeakSetMode ? (
+                        <button
+                            type="button"
+                            className="practice__start-fresh-btn"
+                            onClick={handleBackFromWeakSet}
+                            title="Back to summary"
+                        >
+                            <RotateCcw size={14} />
+                            <span>Back to Summary</span>
+                        </button>
+                    ) : currentIndex > 0 ? (
                         <button
                             type="button"
                             className="practice__start-fresh-btn"
@@ -988,7 +1181,7 @@ export function Practice() {
                             <RotateCcw size={14} />
                             <span>Start Fresh</span>
                         </button>
-                    )}
+                    ) : null}
                 </div>
                 <SessionProgressIndicator
                     currentIndex={currentIndex}

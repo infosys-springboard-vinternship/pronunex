@@ -50,6 +50,9 @@ export const ENDPOINTS = {
         ASSESS: `${BASE_PATH}/practice/assess/`,
         SUBLEVEL_COMPLETE: `${BASE_PATH}/practice/sublevel-complete/`,
         SUBLEVEL_PROGRESS: `${BASE_PATH}/practice/sublevel-progress/`,
+        SUBLEVEL_SUMMARY: (level, sublevel) => `${BASE_PATH}/practice/sublevel-summary/?level=${level}&sublevel=${sublevel}`,
+        SUBLEVEL_RECOMMENDATIONS: (sessionId) => `${BASE_PATH}/practice/sublevel-recommendations/?session_id=${sessionId}`,
+        SUBLEVEL_SESSION: `${BASE_PATH}/practice/sublevel-session/`,
     },
     SESSIONS: {
         LIST: `${BASE_PATH}/practice/sessions/`,

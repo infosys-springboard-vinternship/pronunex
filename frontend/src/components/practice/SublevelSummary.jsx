@@ -1,4 +1,4 @@
-import { Trophy, Target, TrendingUp, RotateCcw, ArrowRight } from 'lucide-react';
+import { Trophy, Target, TrendingUp, RotateCcw, ArrowRight, ArrowLeft } from 'lucide-react';
 import './SublevelSummary.css';
 
 const ROMAN_NUMERALS = {
@@ -9,15 +9,16 @@ const ROMAN_NUMERALS = {
     '5': 'V'
 };
 
-function SublevelSummary({ 
-    level, 
-    sublevel, 
-    averageScore, 
-    weakPhonemes = [], 
+function SublevelSummary({
+    level,
+    sublevel,
+    averageScore,
+    weakPhonemes = [],
     strongestPhoneme = null,
     totalAttempts = 5,
-    onRetry, 
-    onNext 
+    onRetry,
+    onNext,
+    onBack
 }) {
     const scorePercent = Math.round(averageScore * 100);
     const isGoodScore = averageScore >= 0.7;
@@ -27,13 +28,18 @@ function SublevelSummary({
 
     return (
         <div className="sublevel-summary">
+            {/* Gradient background orbs */}
+            <div className="sublevel-summary__bg-effects">
+                <div className="sublevel-summary__orb sublevel-summary__orb--1" />
+                <div className="sublevel-summary__orb sublevel-summary__orb--2" />
+            </div>
+
             <div className="sublevel-summary__container">
+                {/* Header */}
                 <div className="sublevel-summary__header">
-                    {isExcellentScore && (
-                        <div className="sublevel-summary__trophy">
-                            <Trophy size={64} />
-                        </div>
-                    )}
+                    <div className={`sublevel-summary__trophy ${isExcellentScore ? 'sublevel-summary__trophy--excellent' : isGoodScore ? 'sublevel-summary__trophy--good' : 'sublevel-summary__trophy--practice'}`}>
+                        <Trophy size={28} />
+                    </div>
                     <h1 className="sublevel-summary__title">
                         {isExcellentScore ? 'Excellent Work!' : isGoodScore ? 'Great Job!' : 'Keep Practicing!'}
                     </h1>
@@ -42,6 +48,7 @@ function SublevelSummary({
                     </p>
                 </div>
 
+                {/* Score ring */}
                 <div className="sublevel-summary__score-card">
                     <div className="sublevel-summary__score-ring">
                         <svg viewBox="0 0 200 200">
@@ -67,10 +74,11 @@ function SublevelSummary({
                     <p className="sublevel-summary__score-label">Average Score</p>
                 </div>
 
+                {/* Stats */}
                 <div className="sublevel-summary__stats">
                     <div className="sublevel-summary__stat-card">
                         <div className="sublevel-summary__stat-icon sublevel-summary__stat-icon--target">
-                            <Target size={24} />
+                            <Target size={18} />
                         </div>
                         <div className="sublevel-summary__stat-content">
                             <span className="sublevel-summary__stat-label">Sentences Completed</span>
@@ -81,7 +89,7 @@ function SublevelSummary({
                     {strongestPhoneme && (
                         <div className="sublevel-summary__stat-card">
                             <div className="sublevel-summary__stat-icon sublevel-summary__stat-icon--success">
-                                <TrendingUp size={24} />
+                                <TrendingUp size={18} />
                             </div>
                             <div className="sublevel-summary__stat-content">
                                 <span className="sublevel-summary__stat-label">Strongest Sound</span>
@@ -104,15 +112,28 @@ function SublevelSummary({
                     )}
                 </div>
 
+
+
+                {/* Actions - Back, Retry, Next */}
                 <div className="sublevel-summary__actions">
+                    {onBack && (
+                        <button
+                            type="button"
+                            className="sublevel-summary__btn sublevel-summary__btn--back"
+                            onClick={onBack}
+                        >
+                            <ArrowLeft size={18} />
+                            <span>Back</span>
+                        </button>
+                    )}
                     {onRetry && (
                         <button
                             type="button"
                             className="sublevel-summary__btn sublevel-summary__btn--retry"
                             onClick={onRetry}
                         >
-                            <RotateCcw size={20} />
-                            <span>Retry Sublevel</span>
+                            <RotateCcw size={18} />
+                            <span>Retry</span>
                         </button>
                     )}
                     {onNext && (
@@ -122,26 +143,19 @@ function SublevelSummary({
                             onClick={onNext}
                         >
                             <span>Next Sublevel</span>
-                            <ArrowRight size={20} />
+                            <ArrowRight size={18} />
                         </button>
                     )}
                 </div>
 
-                {isExcellentScore && (
-                    <div className="sublevel-summary__encouragement">
-                        Outstanding performance! You're mastering pronunciation. 
-                    </div>
-                )}
-                {isGoodScore && !isExcellentScore && (
-                    <div className="sublevel-summary__encouragement">
-                        Good progress! Keep practicing to refine your skills.
-                    </div>
-                )}
-                {!isGoodScore && (
-                    <div className="sublevel-summary__encouragement">
-                        Don't give up! Practice makes perfect. Try again to improve.
-                    </div>
-                )}
+                {/* Encouragement */}
+                <div className={`sublevel-summary__encouragement ${isExcellentScore ? 'sublevel-summary__encouragement--excellent' : isGoodScore ? 'sublevel-summary__encouragement--good' : 'sublevel-summary__encouragement--neutral'}`}>
+                    {isExcellentScore
+                        ? 'Outstanding performance! You\'re mastering pronunciation.'
+                        : isGoodScore
+                            ? 'Good progress! Keep practicing to refine your skills.'
+                            : 'Don\'t give up! Practice makes perfect. Try again to improve.'}
+                </div>
             </div>
         </div>
     );

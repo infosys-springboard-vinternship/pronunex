@@ -97,19 +97,30 @@ export function AuthProvider({ children }) {
      * Logout user
      */
     const logout = useCallback(async () => {
-        try {
-            await api.post(ENDPOINTS.AUTH.LOGOUT, {
-                refresh: sessionStorage.getItem('refresh_token'),
-            });
-        } catch {
-            // Ignore logout errors
-        }
+        // Save refresh token before clearing (needed for backend invalidation)
+        const refreshToken = sessionStorage.getItem('refresh_token');
 
+        // Clear everything FIRST to prevent cascade
         sessionStorage.removeItem('access_token');
         sessionStorage.removeItem('refresh_token');
         api.clearTokens();
+        api._isLoggingOut = false; // Reset guard for next login
         setUser(null);
         setIsAuthenticated(false);
+
+        // Fire-and-forget backend token invalidation using raw fetch
+        // (not api.post, which would trigger the 401 interceptor)
+        if (refreshToken) {
+            try {
+                await fetch(ENDPOINTS.AUTH.LOGOUT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh: refreshToken }),
+                });
+            } catch {
+                // Ignore - token will expire naturally
+            }
+        }
     }, []);
 
     /**

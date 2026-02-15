@@ -3,7 +3,7 @@ Serializers for practice sessions and attempts.
 """
 
 from rest_framework import serializers
-from .models import UserSession, Attempt, PhonemeError, SublevelProgress
+from .models import UserSession, Attempt, PhonemeError, SublevelProgress, SublevelSession
 from apps.library.serializers import ReferenceSentenceListSerializer
 
 
@@ -122,3 +122,30 @@ class SublevelCompleteSerializer(serializers.Serializer):
     sublevel = serializers.CharField(required=True)
     average_score = serializers.FloatField(required=True, min_value=0.0, max_value=1.0)
     attempts = serializers.IntegerField(default=5)
+
+
+class SublevelSessionSerializer(serializers.ModelSerializer):
+    """Serializer for sublevel session (locked sentence assignments)."""
+    
+    sentences = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = SublevelSession
+        fields = [
+            'id', 'level', 'sublevel', 'sentence_ids', 'current_index',
+            'attempted_sentence_ids', 'is_completed', 'assessment_results', 
+            'sentences', 'created_at', 'updated_at', 'last_active_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at', 'last_active_at']
+    
+    def get_sentences(self, obj):
+        """Return full sentence objects in the locked order."""
+        from apps.library.models import ReferenceSentence
+        from apps.library.serializers import ReferenceSentenceListSerializer
+        
+        # Fetch all sentences and reorder to match sentence_ids order
+        sentences_qs = ReferenceSentence.objects.filter(id__in=obj.sentence_ids)
+        sentences_map = {s.id: s for s in sentences_qs}
+        ordered = [sentences_map[sid] for sid in obj.sentence_ids if sid in sentences_map]
+        
+        return ReferenceSentenceListSerializer(ordered, many=True).data

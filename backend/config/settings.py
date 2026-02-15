@@ -217,7 +217,8 @@ CEREBRAS_API_KEY = os.getenv('CEREBRAS_API_KEY', '')
 
 # Pronunciation Scoring Configuration
 SCORING_CONFIG = {
-    'WEAK_PHONEME_THRESHOLD': 0.6,  # Lowered from 0.7 for less aggressive marking
+    'WEAK_PHONEME_THRESHOLD': 0.85,  # Phonemes below this are flagged for improvement
+    'WEAK_PHONEME_THRESHOLD_SUBLEVEL': 0.88,  # Stricter threshold for sublevel aggregation
     'SCORE_BOOST': 0.15,            # Boost applied to raw similarity scores
     'EMBEDDING_DIM': 768,           # Wav2Vec2 embedding dimension
     'SAMPLE_RATE': 16000,           # Audio sample rate

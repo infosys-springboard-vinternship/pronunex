@@ -8,9 +8,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
 from django.utils import timezone
+from django.db.models import Avg
 
-from .models import UserSession, Attempt, PhonemeError, SublevelProgress
+from .models import UserSession, Attempt, PhonemeError, SublevelProgress, SublevelSession
 from .serializers import (
     UserSessionSerializer,
     AttemptListSerializer,
@@ -19,6 +21,7 @@ from .serializers import (
     AssessmentResultSerializer,
     SublevelProgressSerializer,
     SublevelCompleteSerializer,
+    SublevelSessionSerializer,
 )
 from .services import AssessmentService
 from apps.library.models import ReferenceSentence, Phoneme
@@ -224,6 +227,9 @@ class AssessmentView(APIView):
         analytics_service = AnalyticsService()
         analytics_service.update_after_attempt(request.user, attempt)
         
+        # Build enriched weak phoneme details (articulation tips + practice words)
+        weak_phoneme_details = self._build_weak_phoneme_details(attempt)
+        
         logger.info(f"Assessment completed for user {request.user.email}: score {result['overall_score']}")
         
         response_data = {
@@ -232,6 +238,7 @@ class AssessmentView(APIView):
             'fluency_score': result.get('fluency_score'),
             'phoneme_scores': result['phoneme_scores'],
             'weak_phonemes': result['weak_phonemes'],
+            'weak_phoneme_details': weak_phoneme_details,
             'llm_feedback': result['llm_feedback'],
             'mistakes': result.get('mistakes'),
             'transcribed': result.get('transcribed'),
@@ -292,6 +299,67 @@ class AssessmentView(APIView):
                 )
             except Phoneme.DoesNotExist:
                 logger.warning(f"Phoneme not found: {ps.get('phoneme')}")
+    
+    def _build_weak_phoneme_details(self, attempt):
+        """Build enriched weak phoneme details with articulation tips and practice words.
+        
+        Strategy:
+        1. Find phonemes below WEAK_PHONEME_THRESHOLD
+        2. If none found but overall score < 0.95, return the 3 lowest-scoring phonemes
+        3. Always provide actionable feedback when there's room for improvement
+        """
+        from apps.library.models import SentencePhoneme
+        
+        threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD', 0.85)
+        
+        # Get all phoneme errors sorted by score (worst first), deduplicate
+        all_errors = (
+            attempt.phoneme_errors
+            .select_related('target_phoneme')
+            .order_by('similarity_score')
+        )
+        
+        seen_phonemes = {}
+        for error in all_errors:
+            arpabet = error.target_phoneme.arpabet
+            if arpabet not in seen_phonemes:
+                seen_phonemes[arpabet] = error
+        
+        # Filter to weak phonemes (below threshold)
+        weak_entries = {k: v for k, v in seen_phonemes.items() if v.similarity_score < threshold}
+        
+        # Fallback: if no weak phonemes but score isn't perfect, use 3 lowest-scoring
+        if not weak_entries and seen_phonemes:
+            overall = attempt.phoneme_errors.aggregate(avg=Avg('similarity_score'))['avg'] or 1.0
+            if overall < 0.95:
+                sorted_phonemes = sorted(seen_phonemes.items(), key=lambda x: x[1].similarity_score)
+                weak_entries = dict(sorted_phonemes[:3])
+        
+        details = []
+        for arpabet, error in weak_entries.items():
+            phoneme = error.target_phoneme
+            
+            # Get practice words from SentencePhoneme junction table
+            practice_words = list(
+                SentencePhoneme.objects
+                .filter(phoneme=phoneme)
+                .values_list('word_context', flat=True)
+                .distinct()[:3]
+            )
+            
+            # Fallback to example_word if no SentencePhoneme data
+            if not practice_words:
+                practice_words = [phoneme.example_word] if phoneme.example_word else []
+            
+            details.append({
+                'arpabet': arpabet,
+                'symbol': phoneme.symbol,
+                'average_score': round(error.similarity_score, 3),
+                'articulation_tip': phoneme.articulation_tip or phoneme.description,
+                'practice_words': practice_words,
+            })
+        
+        return details
     
     def _ensure_reference_audio(self, sentence):
         """Ensure reference audio exists, generate via TTS if missing."""
@@ -422,4 +490,476 @@ class SublevelProgressView(APIView):
             'level': level,
             'sublevels': progress_data
         })
+
+
+class SublevelSummaryView(APIView):
+    """
+    GET /api/v1/practice/sublevel-summary/?level=core&sublevel=1
+    
+    Get comprehensive summary after completing a sublevel:
+    - Average score across all sentences
+    - Weak phonemes detected in this sublevel
+    - Recommendation for next steps
+    - Reinforcement sentence recommendations (2-5 targeted sentences)
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def _get_reinforcement_sentences(self, weak_phoneme_arpabets, attempted_sentence_ids, difficulty_level, count=5):
+        """
+        Fetch targeted sentences for reinforcement practice.
+        
+        Strategy:
+        1. Find sentences containing weak phonemes
+        2. Prioritize sentences with multiple weak phonemes
+        3. Avoid already attempted sentences
+        4. Match difficulty level when possible
+        5. Return 2-5 most relevant sentences
+        """
+        from django.db.models import Count, Q
+        from apps.library.models import SentencePhoneme
+        
+        if not weak_phoneme_arpabets:
+            return []
+        
+        # Limit to top 3 weak phonemes for focused practice
+        target_phonemes = weak_phoneme_arpabets[:3]
+        
+        # Strategy 1: Query sentences via SentencePhoneme junction table
+        reinforcement_sentences = list(
+            ReferenceSentence.objects
+            .filter(
+                sentence_phonemes__phoneme__arpabet__in=target_phonemes,
+                is_validated=True
+            )
+            .exclude(id__in=attempted_sentence_ids)  # Avoid repetition
+            .annotate(
+                weak_phoneme_count=Count(
+                    'sentence_phonemes',
+                    filter=Q(sentence_phonemes__phoneme__arpabet__in=target_phonemes)
+                )
+            )
+            .order_by('-weak_phoneme_count', 'difficulty_level', 'id')  # Prioritize by relevance
+            .distinct()[:count]
+        )
+        
+        # Strategy 2 (fallback): If SentencePhoneme table is sparse, find sentences
+        # via PhonemeError records that historically contained these phonemes
+        if not reinforcement_sentences:
+            logger.info(f"SentencePhoneme fallback triggered for phonemes: {target_phonemes}")
+            reinforcement_sentences = list(
+                ReferenceSentence.objects
+                .filter(
+                    user_attempts__phoneme_errors__target_phoneme__arpabet__in=target_phonemes,
+                    is_validated=True
+                )
+                .exclude(id__in=attempted_sentence_ids)
+                .distinct()[:count]
+            )
+        
+        # Strategy 3 (last resort): Any validated sentence at same difficulty level
+        if not reinforcement_sentences:
+            logger.info(f"Last-resort fallback: fetching any validated sentences for level={difficulty_level}")
+            reinforcement_sentences = list(
+                ReferenceSentence.objects
+                .filter(is_validated=True, difficulty_level=difficulty_level)
+                .exclude(id__in=attempted_sentence_ids)
+                .order_by('?')[:count]
+            )
+        
+        # Format response
+        result = []
+        for s in reinforcement_sentences:
+            # Get target phonemes from SentencePhoneme if available
+            sp_phonemes = list(
+                s.sentence_phonemes.filter(phoneme__arpabet__in=target_phonemes)
+                .values_list('phoneme__arpabet', flat=True)
+            ) if hasattr(s, 'sentence_phonemes') else []
+            
+            result.append({
+                'id': s.id,
+                'text': s.text,
+                'difficulty_level': s.difficulty_level,
+                'target_phonemes': sp_phonemes or target_phonemes,
+            })
+        
+        return result
+    
+    def get(self, request):
+        level = request.query_params.get('level')
+        sublevel = request.query_params.get('sublevel')
+        
+        if not level or not sublevel:
+            return Response(
+                {'error': 'level and sublevel parameters required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get the sublevel session
+        try:
+            session = SublevelSession.objects.get(
+                user=request.user,
+                level=level,
+                sublevel=sublevel
+            )
+        except SublevelSession.DoesNotExist:
+            return Response(
+                {'error': 'No session found for this sublevel.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Calculate average score from assessment results
+        assessment_results = session.assessment_results or {}
+        scores = [
+            result.get('overall_score', 0) 
+            for result in assessment_results.values() 
+            if isinstance(result, dict)
+        ]
+        avg_score = sum(scores) / len(scores) if scores else 0
+        
+        # Get weak phonemes from attempts in this sublevel
+        from django.db.models import Avg
+        
+        threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD', 0.7)
+        
+        # Find all attempts for sentences in this sublevel session
+        weak_phonemes_qs = (
+            PhonemeError.objects
+            .filter(
+                attempt__sentence_id__in=session.sentence_ids,
+                attempt__session__user=request.user
+            )
+            .values('target_phoneme', 'target_phoneme__arpabet', 'target_phoneme__symbol')
+            .annotate(avg_score=Avg('similarity_score'))
+            .filter(avg_score__lt=threshold)
+            .order_by('avg_score')[:5]
+        )
+        
+        weak_phonemes = [
+            {
+                'arpabet': wp['target_phoneme__arpabet'],
+                'symbol': wp['target_phoneme__symbol'],
+                'avg_score': round(wp['avg_score'], 3),
+            }
+            for wp in weak_phonemes_qs
+        ]
+        
+        # Determine recommendation
+        if avg_score >= 0.9:
+            recommendation = 'excellent'
+            message = 'Excellent work! You can proceed to the next sublevel.'
+        elif avg_score >= 0.75:
+            recommendation = 'good'
+            message = 'Good job! Consider reviewing weak phonemes before moving on.'
+        elif avg_score >= 0.6:
+            recommendation = 'retry_recommended'
+            message = 'You might benefit from retrying this sublevel to improve your score.'
+        else:
+            recommendation = 'retry_required'
+            message = 'Please retry this sublevel to build stronger pronunciation skills.'
+        
+        # Get reinforcement sentence recommendations if weak phonemes exist
+        reinforcement_sentences = []
+        if weak_phonemes:
+            weak_phoneme_arpabets = [wp['arpabet'] for wp in weak_phonemes]
+            attempted_ids = session.attempted_sentence_ids or session.sentence_ids
+            reinforcement_sentences = self._get_reinforcement_sentences(
+                weak_phoneme_arpabets,
+                attempted_ids,
+                level,
+                count=5
+            )
+        
+        logger.info(
+            f"Sublevel summary for {request.user.email}: level={level}, sublevel={sublevel}, "
+            f"avg_score={avg_score:.3f}, weak_phonemes={len(weak_phonemes)}, "
+            f"reinforcement_sentences={len(reinforcement_sentences)}"
+        )
+        
+        return Response({
+            'level': level,
+            'sublevel': sublevel,
+            'average_score': round(avg_score, 3),
+            'total_sentences': len(session.sentence_ids),
+            'completed_sentences': len(session.attempted_sentence_ids or []),
+            'is_completed': session.is_completed,
+            'weak_phonemes': weak_phonemes,
+            'recommendation': recommendation,
+            'message': message,
+            'reinforcement_sentences': reinforcement_sentences,
+        })
+
+
+class SublevelRecommendationView(APIView):
+    """
+    GET /api/v1/practice/sublevel-recommendations/?session_id=123
+    
+    Aggregate weak phonemes across all attempts in a session and
+    recommend targeted practice sentences.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        session_id = request.query_params.get('session_id')
+        
+        if not session_id:
+            return Response(
+                {'error': 'session_id parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            session = UserSession.objects.get(pk=session_id, user=request.user)
+        except UserSession.DoesNotExist:
+            return Response(
+                {'error': 'Session not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        from apps.library.models import SentencePhoneme
+        
+        threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD_SUBLEVEL', 0.65)
+        
+        # Aggregate weak phonemes across all attempts in this session
+        weak_phonemes_qs = (
+            PhonemeError.objects
+            .filter(attempt__session=session)
+            .values('target_phoneme', 'target_phoneme__arpabet', 'target_phoneme__symbol')
+            .annotate(avg_score=Avg('similarity_score'))
+            .filter(avg_score__lt=threshold)
+            .order_by('avg_score')[:5]
+        )
+        
+        weak_phoneme_ids = [wp['target_phoneme'] for wp in weak_phonemes_qs]
+        weak_phoneme_list = [
+            {
+                'arpabet': wp['target_phoneme__arpabet'],
+                'symbol': wp['target_phoneme__symbol'],
+                'avg_score': round(wp['avg_score'], 3),
+            }
+            for wp in weak_phonemes_qs
+        ]
+        
+        # Find recommended sentences targeting these weak phonemes
+        recommended_sentences = []
+        if weak_phoneme_ids:
+            sentences = (
+                ReferenceSentence.objects
+                .filter(sentence_phonemes__phoneme__in=weak_phoneme_ids)
+                .distinct()
+                .prefetch_related('sentence_phonemes__phoneme')
+                [:5]
+            )
+            
+            for sentence in sentences:
+                target_phonemes = [
+                    sp.phoneme.arpabet
+                    for sp in sentence.sentence_phonemes.all()
+                    if sp.phoneme_id in weak_phoneme_ids
+                ]
+                recommended_sentences.append({
+                    'id': sentence.id,
+                    'text': sentence.text,
+                    'difficulty_level': sentence.difficulty_level,
+                    'target_phonemes': target_phonemes,
+                })
+        
+        return Response({
+            'weak_phonemes': weak_phoneme_list,
+            'recommended_sentences': recommended_sentences,
+            'threshold': threshold,
+        })
+
+
+class SublevelSessionView(APIView):
+    """
+    GET  /api/v1/practice/sublevel-session/?level=core&sublevel=1
+    PATCH /api/v1/practice/sublevel-session/
+    DELETE /api/v1/practice/sublevel-session/?level=core&sublevel=1
+    
+    Manages fixed sentence assignments per user+level+sublevel.
+    
+    GET:   Get-or-create — assigns 5 sentences on first call, returns them on subsequent calls.
+    PATCH: Update current_index and/or assessment_results as user progresses.
+    DELETE: Reset the sublevel session (used for "Retry Sublevel").
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def _get_deterministic_sentences(self, user, level, sublevel, count=5):
+        """
+        Get deterministic sentence selection using seeded randomization.
+        
+        Same user + level + sublevel combination always gets the same sentences
+        in the same order, but different sublevels get different sentences.
+        """
+        import random
+        
+        # Get all available sentences
+        sentences = list(
+            ReferenceSentence.objects.filter(
+                is_validated=True,
+                difficulty_level=level,
+                sublevel=sublevel
+            ).values_list('id', flat=True)
+        )
+        
+        # Fallback: if no sentences match sublevel, try level only
+        if not sentences:
+            sentences = list(
+                ReferenceSentence.objects.filter(
+                    is_validated=True,
+                    difficulty_level=level
+                ).values_list('id', flat=True)
+            )
+        
+        if not sentences:
+            return []
+        
+        # Use deterministic seeding: same user + level + sublevel = same selection
+        seed_string = f"{user.id}-{level}-{sublevel}"
+        random.seed(seed_string)
+        
+        # Randomly select without replacement
+        selected = random.sample(sentences, min(count, len(sentences)))
+        
+        # Reset random seed to avoid side effects
+        random.seed()
+        
+        return selected
+    
+    def get(self, request):
+        level = request.query_params.get('level')
+        sublevel = request.query_params.get('sublevel')
+        
+        if not level or not sublevel:
+            return Response(
+                {'error': 'level and sublevel parameters required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Try to get existing session
+        session = SublevelSession.objects.filter(
+            user=request.user,
+            level=level,
+            sublevel=sublevel
+        ).first()
+        
+        if session:
+            # Validate that all sentence IDs still exist
+            existing_ids = set(
+                ReferenceSentence.objects.filter(
+                    id__in=session.sentence_ids, is_validated=True
+                ).values_list('id', flat=True)
+            )
+            if set(session.sentence_ids) != existing_ids:
+                # Some sentences were deleted — reassign
+                logger.warning(f"Stale sentence IDs detected, reassigning for {request.user.email}")
+                session.delete()
+                session = None
+        
+        if not session:
+            # Assign sentences deterministically using seeded randomization
+            sentences = self._get_deterministic_sentences(
+                request.user, level, sublevel, count=5
+            )
+            
+            if not sentences:
+                return Response(
+                    {'error': 'No sentences available for this level/sublevel.'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            session = SublevelSession.objects.create(
+                user=request.user,
+                level=level,
+                sublevel=sublevel,
+                sentence_ids=sentences,
+                current_index=0,
+                attempted_sentence_ids=[],
+                is_completed=False,
+                assessment_results={}
+            )
+            
+            logger.info(f"Created sublevel session for {request.user.email}: {level} L{sublevel} with {len(sentences)} sentences")
+        
+        serializer = SublevelSessionSerializer(session)
+        return Response(serializer.data)
+    
+    def patch(self, request):
+        level = request.data.get('level')
+        sublevel = request.data.get('sublevel')
+        
+        if not level or not sublevel:
+            return Response(
+                {'error': 'level and sublevel required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            session = SublevelSession.objects.get(
+                user=request.user,
+                level=level,
+                sublevel=sublevel
+            )
+        except SublevelSession.DoesNotExist:
+            return Response(
+                {'error': 'No active session found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Update current_index if provided
+        if 'current_index' in request.data:
+            new_index = int(request.data['current_index'])
+            if 0 <= new_index < len(session.sentence_ids):
+                session.current_index = new_index
+        
+        # Update attempted_sentence_ids if provided
+        if 'attempted_sentence_ids' in request.data:
+            attempted = request.data['attempted_sentence_ids']
+            if isinstance(attempted, list):
+                # Merge new attempts with existing ones
+                existing = session.attempted_sentence_ids or []
+                # Add new IDs that aren't already recorded
+                for sid in attempted:
+                    if sid not in existing and sid in session.sentence_ids:
+                        existing.append(sid)
+                session.attempted_sentence_ids = existing
+        
+        # Update is_completed if provided
+        if 'is_completed' in request.data:
+            session.is_completed = bool(request.data['is_completed'])
+        
+        # Update assessment_results if provided
+        if 'assessment_results' in request.data:
+            # Merge new results into existing ones
+            results = session.assessment_results or {}
+            results.update(request.data['assessment_results'])
+            session.assessment_results = results
+        
+        session.save()
+        
+        serializer = SublevelSessionSerializer(session)
+        return Response(serializer.data)
+    
+    def delete(self, request):
+        level = request.query_params.get('level')
+        sublevel = request.query_params.get('sublevel')
+        
+        if not level or not sublevel:
+            return Response(
+                {'error': 'level and sublevel parameters required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        deleted_count, _ = SublevelSession.objects.filter(
+            user=request.user,
+            level=level,
+            sublevel=sublevel
+        ).delete()
+        
+        logger.info(f"Reset sublevel session for {request.user.email}: {level} L{sublevel} (deleted={deleted_count})")
+        
+        return Response({'message': 'Sublevel session reset.', 'deleted': deleted_count > 0})
 
