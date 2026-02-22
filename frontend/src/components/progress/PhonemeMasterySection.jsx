@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo } from 'react';
-import { ChevronRight, Search, Filter } from 'lucide-react';
+import { ChevronRight, ChevronDown, ChevronUp, Search, Filter } from 'lucide-react';
 import './PhonemeMasterySection.css';
 
 function PhonemeMasteryBar({ phoneme, symbol, score, attempts }) {
@@ -41,6 +41,8 @@ export function PhonemeMasterySection({ phonemeData, onViewAll }) {
     const [filterLevel, setFilterLevel] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [groupBy, setGroupBy] = useState('none'); // 'none', 'level', 'type'
+    const [expanded, setExpanded] = useState(false);
+    const COMPACT_LIMIT = 4;
 
     // Filter and group phonemes
     const filteredPhonemes = useMemo(() => {
@@ -62,7 +64,7 @@ export function PhonemeMasterySection({ phonemeData, onViewAll }) {
 
         // Apply search filter
         if (searchQuery) {
-            filtered = filtered.filter(p => 
+            filtered = filtered.filter(p =>
                 (p.phoneme || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.symbol || '').toLowerCase().includes(searchQuery.toLowerCase())
             );
@@ -161,13 +163,14 @@ export function PhonemeMasterySection({ phonemeData, onViewAll }) {
             </div>
 
             <div className="phoneme-mastery__list">
-                {Object.entries(groupedPhonemes).map(([groupName, phonemes]) => (
-                    phonemes.length > 0 && (
+                {Object.entries(groupedPhonemes).map(([groupName, phonemes]) => {
+                    const displayPhonemes = expanded ? phonemes : phonemes.slice(0, COMPACT_LIMIT);
+                    return phonemes.length > 0 && (
                         <div key={groupName} className="phoneme-mastery__group">
                             {groupBy !== 'none' && (
                                 <h3 className="phoneme-mastery__group-title">{groupName}</h3>
                             )}
-                            {phonemes.slice(0, 8).map((p, idx) => (
+                            {displayPhonemes.map((p, idx) => (
                                 <PhonemeMasteryBar
                                     key={idx}
                                     phoneme={p.phoneme}
@@ -177,15 +180,27 @@ export function PhonemeMasterySection({ phonemeData, onViewAll }) {
                                 />
                             ))}
                         </div>
-                    )
-                ))}
+                    );
+                })}
 
                 {filteredPhonemes.length === 0 && (
                     <p className="phoneme-mastery__no-data">No phonemes match your filters.</p>
                 )}
             </div>
 
-            {phonemeData.all.length > 8 && (
+            <div className="phoneme-mastery__actions">
+                {filteredPhonemes.length > COMPACT_LIMIT && (
+                    <button
+                        className="phoneme-mastery__expand-btn"
+                        onClick={() => setExpanded(!expanded)}
+                    >
+                        {expanded ? (
+                            <><ChevronUp size={16} /> Show Less</>
+                        ) : (
+                            <><ChevronDown size={16} /> Show All {filteredPhonemes.length} Phonemes</>
+                        )}
+                    </button>
+                )}
                 <button
                     className="phoneme-mastery__view-all-btn"
                     onClick={onViewAll}
@@ -193,7 +208,7 @@ export function PhonemeMasterySection({ phonemeData, onViewAll }) {
                     View All Phonemes
                     <ChevronRight size={16} />
                 </button>
-            )}
+            </div>
         </div>
     );
 }

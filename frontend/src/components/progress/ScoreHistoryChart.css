@@ -23,7 +23,7 @@
 
 .score-chart__container {
     width: 100%;
-    min-height: 300px;
+    min-height: 200px;
     animation: chartFadeIn 0.5s ease-out;
 }
 

@@ -1,102 +1,78 @@
 /**
  * Stats Grid Component
- * Displays key metrics with animated counters and sparklines
+ * Displays key metrics with animated counters and premium sparklines
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { AreaChart, Area, ResponsiveContainer, YAxis } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { AnimatedCounter } from './AnimatedCounter';
 import './StatsGrid.css';
 
-// Sparkline Component
-function Sparkline({ data = [], color = '#14b8a6', height = 36 }) {
-    const canvasRef = useRef(null);
+// Premium Sparkline Component (Stripe/Linear style)
+function Sparkline({ data = [], color = '#14b8a6', height = 48 }) {
+    const [animate, setAnimate] = useState(true);
+    const gradientId = useMemo(() => `spark-${Math.random().toString(36).slice(2, 8)}`, []);
 
     useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas || data.length === 0) return;
+        const timer = setTimeout(() => setAnimate(false), 900);
+        return () => clearTimeout(timer);
+    }, []);
 
-        const ctx = canvas.getContext('2d');
-        const dpr = window.devicePixelRatio || 1;
-        const width = canvas.width;
-        const h = canvas.height;
-        const padding = 4;
+    // Transform flat array into recharts data format
+    const chartData = useMemo(() => {
+        if (!data || data.length === 0) return [{ v: 0 }, { v: 0 }];
+        return data.map(v => ({ v: v || 0 }));
+    }, [data]);
 
-        // Enable crisp rendering
-        ctx.imageSmoothingEnabled = false;
-        ctx.clearRect(0, 0, width, h);
-
-        const max = Math.max(...data, 1);
-        const min = Math.min(...data, 0);
-        const range = max - min || 1;
-
-        // Round coordinates to nearest pixel for crisp rendering
-        const points = data.map((value, index) => ({
-            x: Math.round(padding + (index / (data.length - 1)) * (width - padding * 2)),
-            y: Math.round(h - padding - ((value - min) / range) * (h - padding * 2))
-        }));
-
-        // Gradient fill with better visibility
-        const gradient = ctx.createLinearGradient(0, 0, 0, h);
-        gradient.addColorStop(0, color + '50');
-        gradient.addColorStop(1, color + '10');
-
-        // Draw filled area with monotone (Catmull-Rom) interpolation
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, h);
-        ctx.lineTo(points[0].x, points[0].y);
-
-        // Use Catmull-Rom spline for smooth monotone curves
-        for (let i = 0; i < points.length - 1; i++) {
-            const p0 = points[Math.max(0, i - 1)];
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const p3 = points[Math.min(points.length - 1, i + 2)];
-
-            const cp1x = p1.x + (p2.x - p0.x) / 6;
-            const cp1y = p1.y + (p2.y - p0.y) / 6;
-            const cp2x = p2.x - (p3.x - p1.x) / 6;
-            const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        }
-
-        ctx.lineTo(points[points.length - 1].x, h);
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        // Draw stroke line with same interpolation
-        ctx.beginPath();
-        ctx.moveTo(points[0].x, points[0].y);
-
-        for (let i = 0; i < points.length - 1; i++) {
-            const p0 = points[Math.max(0, i - 1)];
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const p3 = points[Math.min(points.length - 1, i + 2)];
-
-            const cp1x = p1.x + (p2.x - p0.x) / 6;
-            const cp1y = p1.y + (p2.y - p0.y) / 6;
-            const cp2x = p2.x - (p3.x - p1.x) / 6;
-            const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-            ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-        }
-
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-    }, [data, color, height]);
+    // Compute trend from sparkline data
+    const sparkTrend = useMemo(() => {
+        if (!data || data.length < 2) return null;
+        const mid = Math.floor(data.length / 2);
+        const firstHalf = data.slice(0, mid);
+        const secondHalf = data.slice(mid);
+        const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length || 1;
+        const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+        const pct = Math.round(((avgSecond - avgFirst) / Math.max(avgFirst, 1)) * 100);
+        return { value: pct, isUp: pct >= 0 };
+    }, [data]);
 
     return (
-        <canvas
-            ref={canvasRef}
-            width={120}
-            height={height}
-            className="stats-grid__sparkline"
-        />
+        <div className="stats-grid__sparkline-wrapper">
+            <div style={{ width: '100%', height }}>
+                <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={chartData} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+                        <defs>
+                            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor={color} stopOpacity={0.15} />
+                                <stop offset="100%" stopColor={color} stopOpacity={0} />
+                            </linearGradient>
+                        </defs>
+                        <YAxis hide domain={['dataMin', 'dataMax']} />
+                        <Area
+                            type="monotone"
+                            dataKey="v"
+                            stroke={color}
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            fill={`url(#${gradientId})`}
+                            dot={false}
+                            activeDot={false}
+                            isAnimationActive={animate}
+                            animationDuration={800}
+                            animationEasing="ease-out"
+                        />
+                    </AreaChart>
+                </ResponsiveContainer>
+            </div>
+            {sparkTrend !== null && (
+                <div className={`stats-grid__spark-trend ${sparkTrend.isUp ? 'stats-grid__spark-trend--up' : 'stats-grid__spark-trend--down'}`}>
+                    {sparkTrend.isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    <span>{sparkTrend.isUp ? '+' : ''}{sparkTrend.value}%</span>
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -292,16 +268,13 @@ function StatsCard({
     label,
     value,
     sparkData,
-    trend,
     color = '#14b8a6',
     gradient,
     suffix = '',
     prefix = '',
     animated = true,
-    customVisualization // NEW: Allow custom visualization component
+    customVisualization
 }) {
-    const trendClass = trend > 0 ? 'up' : trend < 0 ? 'down' : 'neutral';
-
     return (
         <div className={`stats-card gradient-${gradient}`}>
             <div className="stats-card__header">
@@ -326,17 +299,11 @@ function StatsCard({
                     data={sparkData && sparkData.length >= 2
                         ? sparkData
                         : sparkData && sparkData.length === 1
-                            ? [sparkData[0] * 0.8, sparkData[0]] // Show progression from 80% to current
-                            : [0, 0] // Flat baseline for no data
+                            ? [sparkData[0] * 0.8, sparkData[0]]
+                            : [0, 0]
                     }
                     color={color}
                 />
-            )}
-            {trend !== undefined && trend !== null && (
-                <div className={`stats-card__trend stats-card__trend--${trendClass}`}>
-                    {trend > 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                    <span>+{Math.abs(trend)}%</span>
-                </div>
             )}
             <div className="stats-card-glow" aria-hidden="true" />
             <div className="stats-card-border-glow" aria-hidden="true" />
@@ -405,7 +372,6 @@ export function StatsGrid({ stats, sparklineData, trend, sessionHistory = [] }) 
                 value={Math.round(stats.averageScore * 100)}
                 suffix="%"
                 sparkData={sparklineData}
-                trend={trend?.direction === 'up' ? trend.value : trend?.direction === 'down' ? -trend.value : 0}
                 color={CHART_COLORS.success}
                 gradient="emerald"
             />

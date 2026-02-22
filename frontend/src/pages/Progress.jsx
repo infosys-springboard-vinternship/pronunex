@@ -5,7 +5,6 @@
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, Zap } from 'lucide-react';
 import { useApi } from '../hooks/useApi';
 import { ENDPOINTS } from '../api/endpoints';
 import { Card } from '../components/Card';
@@ -14,7 +13,6 @@ import { NoProgress } from '../components/EmptyState';
 import {
     ProgressHeader,
     StatsGrid,
-    PhonemeMasterySection,
     ProgressSkeleton,
     SessionHistoryCard,
     ScoreHistoryChart,
@@ -32,11 +30,8 @@ export function Progress() {
         useApi(ENDPOINTS.ANALYTICS.PROGRESS);
     const { data: history, isLoading: historyLoading, error: historyError, refetch: refetchHistory } =
         useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=${period}`, { deps: [period] });
-    const { data: phonemeStats, isLoading: phonemesLoading, error: phonemesError, refetch: refetchPhonemes } =
-        useApi(ENDPOINTS.ANALYTICS.PHONEME_STATS);
-
-    const isLoading = progressLoading || historyLoading || phonemesLoading;
-    const error = progressError || historyError || phonemesError;
+    const isLoading = progressLoading || historyLoading;
+    const error = progressError || historyError;
 
     // Process history data for chart — fill all dates including missed days
     const chartData = useMemo(() => {
@@ -74,56 +69,7 @@ export function Progress() {
         return allDates;
     }, [history, period]);
 
-    // Process phoneme data for mastery section - use data from multiple sources
-    const phonemeData = useMemo(() => {
-        // Try phoneme-stats endpoint first
-        if (phonemeStats && phonemeStats.by_type) {
-            const byType = phonemeStats.by_type || {};
-            const allPhonemes = [];
 
-            Object.values(byType).forEach(phonemes => {
-                if (Array.isArray(phonemes)) {
-                    allPhonemes.push(...phonemes);
-                }
-            });
-
-            if (allPhonemes.length > 0) {
-                const sorted = allPhonemes.sort((a, b) => (a.current_score || 0) - (b.current_score || 0));
-                const weak = sorted.filter(p => (p.current_score || 0) < 0.7);
-                const strong = sorted.filter(p => (p.current_score || 0) >= 0.85);
-                return { all: sorted, weak, strong };
-            }
-        }
-
-        // Fallback to phoneme_progress from progressData
-        if (progressData && progressData.phoneme_progress && Array.isArray(progressData.phoneme_progress)) {
-            const allPhonemes = progressData.phoneme_progress.map(p => ({
-                phoneme: p.phoneme?.arpabet || p.phoneme_arpabet || p.phoneme,
-                symbol: p.phoneme?.symbol || p.phoneme_symbol || p.symbol,
-                current_score: p.current_score || 0,
-                attempts: p.attempts_count || p.attempts || 0,
-                best_score: p.best_score || 0,
-            }));
-
-            const sorted = allPhonemes.sort((a, b) => (a.current_score || 0) - (b.current_score || 0));
-            const weak = sorted.filter(p => (p.current_score || 0) < 0.7);
-            const strong = sorted.filter(p => (p.current_score || 0) >= 0.85);
-            return { all: sorted, weak, strong };
-        }
-
-        // Fallback to weak/strong phonemes lists from progressData
-        if (progressData) {
-            const weak = (progressData.current_weak_phonemes || []).map(p =>
-                typeof p === 'string' ? { phoneme: p, symbol: p, current_score: 0.5, attempts: 0 } : p
-            );
-            const strong = (progressData.current_strong_phonemes || []).map(p =>
-                typeof p === 'string' ? { phoneme: p, symbol: p, current_score: 0.9, attempts: 0 } : p
-            );
-            return { all: [...weak, ...strong], weak, strong };
-        }
-
-        return { all: [], weak: [], strong: [] };
-    }, [phonemeStats, progressData]);
 
     // Calculate trend from chart data
     const trend = useMemo(() => {
@@ -200,7 +146,6 @@ export function Progress() {
     const handleRetry = () => {
         refetchProgress();
         refetchHistory();
-        refetchPhonemes();
     };
 
     if (isLoading) {
@@ -261,71 +206,12 @@ export function Progress() {
                     />
                 </Card>
 
-                {/* Phoneme Mastery Section */}
-                <Card variant="elevated" padding="lg" className="progress__chart-card">
-                    <PhonemeMasterySection
-                        phonemeData={phonemeData}
-                        onViewAll={() => navigate('/phonemes')}
-                    />
-                </Card>
-
                 {/* Session History */}
-                <Card variant="elevated" padding="lg" className="progress__chart-card">
+                <Card variant="elevated" padding="lg" className="progress__chart-card progress__chart-card--full">
                     <SessionHistoryCard
                         sessions={sessionHistory}
                         period={period}
                     />
-                </Card>
-
-                {/* Practice Recommendations */}
-                <Card variant="elevated" padding="lg" className="progress__chart-card progress__recommendations">
-                    <div className="progress__chart-header">
-                        <h2 className="progress__chart-title">
-                            <Zap size={20} className="progress__title-icon" />
-                            Focus Areas
-                        </h2>
-                    </div>
-                    <div className="progress__recommendations-list">
-                        {phonemeData.weak.length > 0 ? (
-                            <>
-                                <p className="progress__recommendations-intro">
-                                    Based on your practice history, focus on these sounds:
-                                </p>
-                                <div className="progress__focus-phonemes">
-                                    {phonemeData.weak.slice(0, 4).map((p, idx) => (
-                                        <div key={idx} className="progress__focus-item">
-                                            <span className="progress__focus-symbol">/{p.symbol || p.phoneme}/</span>
-                                            <span className="progress__focus-score">
-                                                {Math.round((p.current_score || 0) * 100)}%
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <button
-                                    className="progress__practice-btn"
-                                    onClick={() => navigate('/practice')}
-                                >
-                                    <Mic size={18} />
-                                    Practice These Sounds
-                                </button>
-                            </>
-                        ) : (
-                            <div className="progress__mastery-complete">
-                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="progress__mastery-icon">
-                                    <circle cx="12" cy="8" r="7" />
-                                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-                                </svg>
-                                <p>Great job! You're performing well across all phonemes.</p>
-                                <button
-                                    className="progress__practice-btn"
-                                    onClick={() => navigate('/practice')}
-                                >
-                                    <Mic size={18} />
-                                    Continue Practice
-                                </button>
-                            </div>
-                        )}
-                    </div>
                 </Card>
             </div>
         </div>
