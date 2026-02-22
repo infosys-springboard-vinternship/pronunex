@@ -1,23 +1,21 @@
 /**
- * Dashboard Page - Three-Column Grid Layout
- * Full viewport adaptive with profile, stats, and charts
+ * Dashboard Page - Two-Column Grid Layout
+ * Profile sidebar + main content with today's activity, stats, and charts
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
     Mic,
-    BarChart2,
-    BookOpen,
     Target,
     Flame,
     Award,
-    ArrowRight,
     Sparkles,
     Trophy,
     Star,
-    Zap,
-    CheckCircle
+    CheckCircle,
+    Calendar,
+    TrendingUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
@@ -124,7 +122,7 @@ function Sparkline({ data = [], color = '#047857' }) {
     );
 }
 
-// Weekly Progress Chart Component with Smooth Curves and Tooltips
+// Weekly Progress Chart Component - HiDPI Crisp Canvas Rendering
 function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -132,46 +130,58 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
 
     const chartData = data.length > 0 ? data : [0, 0, 0, 0, 0, 0, 0];
 
-
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        const container = containerRef.current;
+        if (!canvas || !container) return;
+
+        // Use container's actual dimensions for crisp rendering
+        const dpr = window.devicePixelRatio || 1;
+        const rect = container.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+
+        // Set canvas buffer to match display size * DPR for sharp pixels
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
 
         const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        const padding = { top: 20, right: 20, bottom: 30, left: 40 };
-
+        ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, width, height);
 
+        const padding = { top: 20, right: 20, bottom: 32, left: 48 };
         const chartWidth = width - padding.left - padding.right;
         const chartHeight = height - padding.top - padding.bottom;
 
         const max = Math.max(...chartData, 100);
         const min = 0;
 
-        // Draw grid lines with increased opacity
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.08)';
+        // Draw grid lines — subtle dashed
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
         ctx.lineWidth = 1;
         for (let i = 0; i <= 4; i++) {
-            const y = padding.top + (chartHeight / 4) * i;
+            const y = Math.round(padding.top + (chartHeight / 4) * i) + 0.5;
             ctx.beginPath();
             ctx.moveTo(padding.left, y);
             ctx.lineTo(width - padding.right, y);
             ctx.stroke();
         }
+        ctx.setLineDash([]);
 
-        // Calculate points
+        // Calculate points (snap to pixel grid for sharpness)
         const points = chartData.map((value, index) => ({
-            x: padding.left + (index / (chartData.length - 1)) * chartWidth,
-            y: padding.top + chartHeight - ((value - min) / (max - min)) * chartHeight
+            x: Math.round(padding.left + (index / (chartData.length - 1)) * chartWidth),
+            y: Math.round(padding.top + chartHeight - ((value - min) / (max - min)) * chartHeight)
         }));
 
-        // Draw soft gradient area fill first (behind line)
+        // Draw gradient area fill
         const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
-        gradient.addColorStop(0, 'rgba(4, 120, 87, 0.18)');
-        gradient.addColorStop(0.5, 'rgba(4, 120, 87, 0.08)');
-        gradient.addColorStop(1, 'rgba(4, 120, 87, 0)');
+        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        gradient.addColorStop(0.6, 'rgba(16, 185, 129, 0.08)');
+        gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
 
         ctx.beginPath();
         ctx.moveTo(points[0].x, height - padding.bottom);
@@ -186,7 +196,7 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
         ctx.fillStyle = gradient;
         ctx.fill();
 
-        // Draw smooth bezier curve line
+        // Draw main curve line — thicker stroke for clarity
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
         for (let i = 0; i < points.length - 1; i++) {
@@ -195,57 +205,66 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
             ctx.quadraticCurveTo(points[i].x, points[i].y, xMid, yMid);
         }
         ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-        ctx.strokeStyle = '#047857';
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         ctx.stroke();
 
-        // Draw points
+        // Draw data points — larger and higher contrast
         points.forEach(p => {
+            // Outer ring
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
-            ctx.fillStyle = '#047857';
+            ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#10b981';
             ctx.fill();
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            // Inner dot for contrast
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2.5, 0, 2 * Math.PI);
+            ctx.fillStyle = '#065f46';
+            ctx.fill();
+            // White ring outline
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
         });
 
-        // Draw labels
+        // Draw X-axis labels — higher contrast
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '11px Inter, sans-serif';
+        ctx.font = '500 13px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         labels.forEach((label, index) => {
             const x = padding.left + (index / (labels.length - 1)) * chartWidth;
             ctx.fillText(label, x, height - 8);
         });
 
-        // Draw Y-axis labels
+        // Draw Y-axis labels — higher contrast
         ctx.textAlign = 'right';
+        ctx.font = '500 13px Inter, system-ui, sans-serif';
         for (let i = 0; i <= 4; i++) {
             const value = Math.round(min + ((max - min) / 4) * (4 - i));
-            const y = padding.top + (chartHeight / 4) * i + 4;
-            ctx.fillText(value + '%', padding.left - 8, y);
+            const y = padding.top + (chartHeight / 4) * i + 5;
+            ctx.fillText(value + '%', padding.left - 10, y);
         }
 
         // Store points for tooltip detection
-        canvas.chartPoints = points;
-        canvas.chartData = chartData;
-        canvas.chartLabels = labels;
-        canvas.chartPadding = padding;
+        canvas._chartPoints = points;
+        canvas._chartData = chartData;
+        canvas._chartLabels = labels;
     }, [chartData, labels]);
 
     const handleMouseMove = (e) => {
         const canvas = canvasRef.current;
-        if (!canvas || !canvas.chartPoints) return;
+        if (!canvas || !canvas._chartPoints) return;
 
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
+        const dpr = window.devicePixelRatio || 1;
+        const scaleX = canvas.width / (dpr * rect.width);
         const x = (e.clientX - rect.left) * scaleX;
-        const points = canvas.chartPoints;
+        const points = canvas._chartPoints;
 
-        // Find closest point
         let closestIdx = 0;
         let closestDist = Infinity;
         points.forEach((p, idx) => {
@@ -260,17 +279,17 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
             setTooltip({
                 show: true,
                 x: e.clientX - rect.left,
-                y: points[closestIdx].y / scaleX - 10,
-                day: canvas.chartLabels[closestIdx],
-                score: canvas.chartData[closestIdx]
+                y: points[closestIdx].y / scaleX - 14,
+                day: canvas._chartLabels[closestIdx],
+                score: canvas._chartData[closestIdx]
             });
         } else {
-            setTooltip({ ...tooltip, show: false });
+            setTooltip(prev => ({ ...prev, show: false }));
         }
     };
 
     const handleMouseLeave = () => {
-        setTooltip({ ...tooltip, show: false });
+        setTooltip(prev => ({ ...prev, show: false }));
     };
 
     return (
@@ -283,8 +302,6 @@ function WeeklyChart({ data = [], labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', '
         >
             <canvas
                 ref={canvasRef}
-                width={600}
-                height={180}
                 className="dashboard__chart-canvas"
             />
             {tooltip.show && (
@@ -489,14 +506,17 @@ export function Dashboard() {
     const computedLevel = stats.computed_level?.level || settings.defaultDifficulty || 'beginner';
     const userLevel = computedLevel.charAt(0).toUpperCase() + computedLevel.slice(1);
 
-    // Mock weak phonemes for display
-    const weakPhonemes = normalizedStats.weak_phonemes.length > 0
-        ? normalizedStats.weak_phonemes.slice(0, 3)
-        : [
-            { phoneme: 'th', example: 'think', score: 45 },
-            { phoneme: 'r', example: 'red', score: 52 },
-            { phoneme: 'l', example: 'love', score: 58 },
-        ];
+    // Level progress calculation
+    const levelOrder = ['beginner', 'intermediate', 'advanced'];
+    const currentLevelIdx = levelOrder.indexOf(computedLevel.toLowerCase());
+    const levelProgress = currentLevelIdx >= 0 ? ((currentLevelIdx + 1) / levelOrder.length) * 100 : 33;
+    const nextLevel = currentLevelIdx < levelOrder.length - 1
+        ? levelOrder[currentLevelIdx + 1].charAt(0).toUpperCase() + levelOrder[currentLevelIdx + 1].slice(1)
+        : null;
+
+    // Today's stats from the daily goal data
+    const todayAttempts = Math.round((normalizedStats.daily_goal_progress / 100) * normalizedStats.daily_goal_target);
+    const todayBestScore = Math.round((normalizedStats.average_score || 0) * 100);
 
     return (
         <div className="dashboard">
@@ -524,20 +544,45 @@ export function Dashboard() {
                 <aside className="dashboard__left-column">
                     {/* Profile Card */}
                     <div className="dashboard__profile-card">
-                        <img
-                            src={getAvatarById(user?.avatar_id).src}
-                            alt="Profile"
-                            className="dashboard__avatar-img"
-                        />
+                        <Link to="/profile" className="dashboard__avatar-link">
+                            <img
+                                src={getAvatarById(user?.avatar_id).src}
+                                alt="Profile"
+                                className="dashboard__avatar-img"
+                            />
+                        </Link>
                         <div className="dashboard__user-info">
                             <h2 className="dashboard__user-name">{userName}</h2>
                             <span className="dashboard__user-level">{userLevel}</span>
                         </div>
 
-                        {/* Daily Goal */}
+                        {/* Level Progress */}
+                        <div className="dashboard__level-progress">
+                            <div className="dashboard__level-bar">
+                                <div
+                                    className="dashboard__level-fill"
+                                    style={{ width: `${levelProgress}%` }}
+                                />
+                            </div>
+                            <span className="dashboard__level-next">
+                                {nextLevel ? `Next: ${nextLevel}` : 'Max Level'}
+                            </span>
+                        </div>
+
+                        {/* Daily Goal - Horizontal Layout */}
                         <div className="dashboard__daily-goal">
-                            <ProgressRing progress={normalizedStats.daily_goal_progress} />
-                            <span className="dashboard__goal-label">Daily Goal Progress</span>
+                            <div className="dashboard__goal-stat">
+                                <span className="dashboard__goal-stat-value">{todayAttempts}</span>
+                                <span className="dashboard__goal-stat-label">Attempts Today</span>
+                            </div>
+                            <div className="dashboard__goal-center">
+                                <ProgressRing progress={normalizedStats.daily_goal_progress} size={70} strokeWidth={7} />
+                                <span className="dashboard__goal-label">Daily Goal</span>
+                            </div>
+                            <div className="dashboard__goal-stat">
+                                <span className="dashboard__goal-stat-value">{Math.max(0, normalizedStats.daily_goal_target - todayAttempts)}</span>
+                                <span className="dashboard__goal-stat-label">Remaining</span>
+                            </div>
                         </div>
                     </div>
 
@@ -564,6 +609,33 @@ export function Dashboard() {
 
                 {/* Center Column - Stats & Charts */}
                 <main className="dashboard__center-column">
+                    {/* Today's Activity Card */}
+                    <div className="dashboard__today-card">
+                        <div className="dashboard__today-item">
+                            <Calendar size={18} className="dashboard__today-icon" />
+                            <div className="dashboard__today-info">
+                                <span className="dashboard__today-value">{todayAttempts}</span>
+                                <span className="dashboard__today-label">attempts today</span>
+                            </div>
+                        </div>
+                        <div className="dashboard__today-divider" />
+                        <div className="dashboard__today-item">
+                            <TrendingUp size={18} className="dashboard__today-icon" />
+                            <div className="dashboard__today-info">
+                                <span className="dashboard__today-value">{todayBestScore}%</span>
+                                <span className="dashboard__today-label">avg score</span>
+                            </div>
+                        </div>
+                        <div className="dashboard__today-divider" />
+                        <div className="dashboard__today-item">
+                            <Flame size={18} className="dashboard__today-icon dashboard__today-icon--streak" />
+                            <div className="dashboard__today-info">
+                                <span className="dashboard__today-value">{normalizedStats.streak_days}</span>
+                                <span className="dashboard__today-label">day streak</span>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Stats Grid */}
                     <div className="dashboard__stats-grid">
                         <div className="dashboard__stat-card">
@@ -592,19 +664,20 @@ export function Dashboard() {
 
                         <div className="dashboard__stat-card">
                             <div className="dashboard__stat-header">
-                                <span className="dashboard__stat-label">Day Streak</span>
+                                <span className="dashboard__stat-label">Daily Goal</span>
                                 <div className="dashboard__stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
-                                    <Flame size={18} />
+                                    <Target size={18} />
                                 </div>
                             </div>
-                            <span className="dashboard__stat-value">{normalizedStats.streak_days}</span>
+                            <span className="dashboard__stat-value">{Math.round(normalizedStats.daily_goal_progress)}%</span>
+                            <Sparkline data={[10, 20, 35, 50, 45, 60, normalizedStats.daily_goal_progress]} color="#d97706" />
                         </div>
 
                         <div className="dashboard__stat-card">
                             <div className="dashboard__stat-header">
                                 <span className="dashboard__stat-label">Focus Areas</span>
-                                <div className="dashboard__stat-icon" style={{ background: '#dbeafe', color: '#2563eb' }}>
-                                    <BookOpen size={18} />
+                                <div className="dashboard__stat-icon" style={{ background: '#fef3c7', color: '#d97706' }}>
+                                    <Flame size={18} />
                                 </div>
                             </div>
                             <span className="dashboard__stat-value">{normalizedStats.weak_phonemes_count}</span>
@@ -635,74 +708,6 @@ export function Dashboard() {
                     </div>
                 </main>
 
-                {/* Right Column - Sidebar */}
-                <aside className="dashboard__right-column">
-                    {/* Quick Actions */}
-                    <div className="dashboard__quick-actions">
-                        <h3 className="dashboard__section-title">Quick Actions</h3>
-                        <div className="dashboard__action-list">
-                            <Link to="/practice" className="dashboard__action-item">
-                                <div className="dashboard__action-icon dashboard__action-icon--primary">
-                                    <Mic size={20} />
-                                </div>
-                                <div className="dashboard__action-text">
-                                    <h4>Practice Session</h4>
-                                    <p>Record and assess</p>
-                                </div>
-                                <ArrowRight size={16} className="dashboard__action-arrow" />
-                            </Link>
-
-                            <Link to="/progress" className="dashboard__action-item">
-                                <div className="dashboard__action-icon dashboard__action-icon--success">
-                                    <BarChart2 size={20} />
-                                </div>
-                                <div className="dashboard__action-text">
-                                    <h4>View Progress</h4>
-                                    <p>Track improvement</p>
-                                </div>
-                                <ArrowRight size={16} className="dashboard__action-arrow" />
-                            </Link>
-
-                            <Link to="/phonemes" className="dashboard__action-item">
-                                <div className="dashboard__action-icon dashboard__action-icon--info">
-                                    <BookOpen size={20} />
-                                </div>
-                                <div className="dashboard__action-text">
-                                    <h4>Phoneme Library</h4>
-                                    <p>Learn sounds</p>
-                                </div>
-                                <ArrowRight size={16} className="dashboard__action-arrow" />
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Words to Review */}
-                    <div className="dashboard__words-review">
-                        <h3 className="dashboard__section-title">Focus Phonemes</h3>
-                        <div className="dashboard__word-list">
-                            {weakPhonemes.map((item, idx) => (
-                                <div key={idx} className="dashboard__word-item">
-                                    <div className="dashboard__word-info">
-                                        <span className="dashboard__word-phoneme">
-                                            /{typeof item === 'string' ? item : item.phoneme}/
-                                        </span>
-                                        <span className="dashboard__word-example">
-                                            {typeof item === 'string' ? '' : item.example}
-                                        </span>
-                                    </div>
-                                    <button
-                                        className="dashboard__word-practice"
-                                        onClick={() => navigate('/practice')}
-                                    >
-                                        Practice
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </aside>
-
-
                 {/* Bottom Section - 2x2 Grid */}
                 <section className="dashboard__bottom-section" style={{
                     gridColumn: '1 / -1',
@@ -712,9 +717,9 @@ export function Dashboard() {
                     marginTop: '0.5rem'
                 }}>
                     <SessionHistory />
-                    <QuickPractice />
+                    <RecommendedSentences />
                     <PhonemeMastery />
-                    <LearningTips />
+                    <PracticeTimeChart />
                 </section>
 
             </div>
@@ -722,10 +727,10 @@ export function Dashboard() {
     );
 }
 
-// Lazy load bottom components to avoid circular deps if any
+// Bottom section components
 import { SessionHistory } from '../components/dashboard/bottom/SessionHistory';
-import { QuickPractice } from '../components/dashboard/bottom/QuickPractice';
+import { RecommendedSentences } from '../components/dashboard/bottom/RecommendedSentences';
 import { PhonemeMastery } from '../components/dashboard/bottom/PhonemeMastery';
-import { LearningTips } from '../components/dashboard/bottom/LearningTips';
+import { PracticeTimeChart } from '../components/dashboard/bottom/PracticeTimeChart';
 
 export default Dashboard;

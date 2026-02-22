@@ -1,0 +1,124 @@
+/* Recommended Sentences Component */
+.recommended-sentences {
+    background: var(--surface-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-enterprise);
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.recommended-sentences__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.recommended-sentences__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.recommended-sentences__badge {
+    font-size: var(--text-xs);
+    color: var(--color-primary-600);
+    background: var(--color-primary-50);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-weight: var(--font-medium);
+}
+
+[data-theme='dark'] .recommended-sentences__badge {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+.recommended-sentences__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.recommended-sentences__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-primary);
+    transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.recommended-sentences__item:hover {
+    border-color: var(--color-primary-300);
+    transform: translateX(2px);
+}
+
+.recommended-sentences__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.recommended-sentences__text {
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-1) 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.recommended-sentences__phonemes {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+}
+
+.recommended-sentences__phoneme-tag {
+    font-size: 10px;
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-semibold);
+    color: var(--color-warning-600);
+    background: var(--color-warning-50);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+}
+
+[data-theme='dark'] .recommended-sentences__phoneme-tag {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+}
+
+.recommended-sentences__practice-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--color-primary-500);
+    color: white;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background var(--transition-fast), transform var(--transition-fast);
+}
+
+.recommended-sentences__practice-btn:hover {
+    background: var(--color-primary-600);
+    transform: scale(1.1);
+}
