@@ -736,15 +736,7 @@ export function Practice() {
                 return; // Don't auto-advance, summary will show
             }
 
-            // Auto-advance to next sentence if enabled and score is good
-            if (settings.autoAdvance && data.overall_score >= 0.7 && currentIndex < (sentences?.length || 0) - 1) {
-                setTimeout(() => {
-                    setCurrentIndex(prev => prev + 1);
-                    setAssessmentError(null);
-                    cancelRecording();
-                    toast.info('Auto-advancing to next sentence...');
-                }, 2000); // 2 second delay to show results
-            }
+
         } catch (err) {
             // Network or server error
             toast.error('Failed to assess pronunciation. Please try again.');
