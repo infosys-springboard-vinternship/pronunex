@@ -122,12 +122,16 @@ class AssessmentService:
         
         try:
             # Step 1: Clean and preprocess audio
+            t0 = time.time()
             cleaned_audio_path = self._clean_audio(audio_file)
+            logger.info(f"[PERF] Audio clean: {(time.time()-t0)*1000:.0f}ms")
             
             # Step 2: ASR GATEKEEPER - Verify what user actually said
             # This prevents the "Yes Man" bug where wrong speech gets valid scores
+            t0 = time.time()
             from nlp_core.asr_validator import validate_speech
             asr_result = validate_speech(cleaned_audio_path, sentence.text)
+            logger.info(f"[PERF] ASR validation: {(time.time()-t0)*1000:.0f}ms")
             
             # REJECT completely wrong speech (similarity too low)
             if not asr_result.get('can_proceed', False):
@@ -166,27 +170,33 @@ class AssessmentService:
             alignment_map = sentence.alignment_map
             
             # Step 4: Run forced alignment on user audio
+            t0 = time.time()
             user_timestamps = self._align_audio(
                 cleaned_audio_path, 
                 expected_phonemes,
                 sentence_text=sentence.text
             )
+            logger.info(f"[PERF] Forced alignment: {(time.time()-t0)*1000:.0f}ms")
             
             # Step 5: CONTEXTUAL EMBEDDINGS (tensor slicing, not audio slicing!)
             # This fixes the "Context-Blind" bug
+            t0 = time.time()
             from nlp_core.vectorizer import compute_phoneme_embeddings
             user_embeddings = compute_phoneme_embeddings(cleaned_audio_path, user_timestamps)
+            logger.info(f"[PERF] Embeddings: {(time.time()-t0)*1000:.0f}ms")
             
             # Step 6: Fetch precomputed reference embeddings (cached)
             reference_embeddings = self._get_reference_embeddings(sentence)
             
             # Step 7: Calculate cosine similarity per phoneme
+            t0 = time.time()
             phoneme_scores = self._calculate_scores(
                 user_embeddings, 
                 reference_embeddings,
                 expected_phonemes,
                 user_timestamps
             )
+            logger.info(f"[PERF] Scoring: {(time.time()-t0)*1000:.0f}ms")
             
             # Handle unscorable result (honest failure, no fake scores)
             if isinstance(phoneme_scores, dict) and phoneme_scores.get('status') == 'unscorable':
@@ -219,15 +229,11 @@ class AssessmentService:
             overall_score = self._calculate_overall_score(phoneme_scores)
             fluency_score = self._calculate_fluency_score(user_timestamps, alignment_map)
             
-            # Step 11: Generate LLM feedback (text only)
-            llm_feedback = self._generate_feedback(
-                phoneme_scores=phoneme_scores,
-                weak_phonemes=weak_phonemes,
-                sentence_text=sentence.text,
-                overall_score=overall_score
-            )
+            # LLM feedback is generated ASYNCHRONOUSLY by the view layer
+            # This saves 2-7 seconds per request
             
             processing_time = int((time.time() - start_time) * 1000)
+            logger.info(f"[PERF] Total pipeline (excl. async): {processing_time}ms")
             
             # Calculate clarity score from weak phoneme ratio
             if phoneme_scores:
@@ -271,8 +277,8 @@ class AssessmentService:
                 'phoneme_errors': mistake_report.get('phoneme_errors', 0),
                 'mistake_feedback': mistake_report.get('feedback', {}),
                 
-                # LLM feedback (only if no major errors)
-                'llm_feedback': llm_feedback,
+                # LLM feedback: None here, generated async by view
+                'llm_feedback': None,
                 'processing_time_ms': processing_time,
                 'cleaned_audio_path': cleaned_audio_path,
             }

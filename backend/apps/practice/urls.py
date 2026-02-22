@@ -10,6 +10,7 @@ from .views import (
     AttemptListView,
     AttemptDetailView,
     AssessmentView,
+    AttemptFeedbackView,
     SublevelCompleteView,
     SublevelProgressView,
     SublevelSummaryView,
@@ -29,6 +30,7 @@ urlpatterns = [
     
     # Core Assessment
     path('assess/', AssessmentView.as_view(), name='assess'),
+    path('attempt-feedback/', AttemptFeedbackView.as_view(), name='attempt_feedback'),
     
     # Sublevel Progress
     path('sublevel-complete/', SublevelCompleteView.as_view(), name='sublevel_complete'),

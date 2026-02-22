@@ -628,9 +628,39 @@ export function Practice() {
                 return;
             }
 
-            // Success - set assessment data
+            // Success - set assessment data (scores arrive instantly)
             setAssessment(data);
             toast.success('Assessment complete!');
+
+            // Poll for async LLM feedback if pending
+            if (data.llm_feedback_pending && data.attempt_id) {
+                const pollForFeedback = async (attemptId, retries = 3) => {
+                    for (let i = 0; i < retries; i++) {
+                        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between polls
+                        try {
+                            const fbRes = await api.get(ENDPOINTS.PRACTICE.ATTEMPT_FEEDBACK(attemptId));
+                            if (fbRes?.data?.ready && fbRes.data.llm_feedback) {
+                                // Update assessment with LLM feedback (seamless UI update)
+                                setAssessment(prev => prev ? { ...prev, llm_feedback: fbRes.data.llm_feedback, llm_feedback_pending: false } : prev);
+                                // Also update cached results
+                                if (currentSentence) {
+                                    setBackendAssessmentResults(prev => {
+                                        const sid = String(currentSentence.id);
+                                        if (prev[sid]) {
+                                            return { ...prev, [sid]: { ...prev[sid], llm_feedback: fbRes.data.llm_feedback, llm_feedback_pending: false } };
+                                        }
+                                        return prev;
+                                    });
+                                }
+                                return; // Done
+                            }
+                        } catch (err) {
+                            // Silent - fallback feedback already showing
+                        }
+                    }
+                };
+                pollForFeedback(data.attempt_id); // Fire and forget
+            }
 
             // Cache this assessment result for this sentence on backend
             const resultUpdate = { [String(currentSentence.id)]: data };

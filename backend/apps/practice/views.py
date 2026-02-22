@@ -3,6 +3,7 @@ API Views for practice sessions and assessments.
 """
 
 import logging
+import threading
 from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -217,18 +218,77 @@ class AssessmentView(APIView):
             )
         
         # Save attempt to database
+        import time as _time
+        t_db = _time.time()
         attempt = self._save_attempt(session, sentence, audio_file, result)
         
-        # Save phoneme errors
+        # Save phoneme errors (bulk optimized)
         self._save_phoneme_errors(attempt, result.get('phoneme_scores', []))
+        logger.info(f"[PERF] DB save (attempt+phonemes): {(_time.time()-t_db)*1000:.0f}ms")
         
-        # Update analytics (UserProgress, PhonemeProgress, StreakRecord) in real-time
-        from apps.analytics.services import AnalyticsService
-        analytics_service = AnalyticsService()
-        analytics_service.update_after_attempt(request.user, attempt)
+        # === ASYNC: Analytics update (saves ~12s) ===
+        def _update_analytics_async(user_id, attempt_id):
+            try:
+                from django.contrib.auth import get_user_model
+                from apps.analytics.services import AnalyticsService
+                User = get_user_model()
+                user = User.objects.get(id=user_id)
+                a = Attempt.objects.get(id=attempt_id)
+                AnalyticsService().update_after_attempt(user, a)
+            except Exception as e:
+                logger.error(f"Async analytics failed: {e}")
+        
+        threading.Thread(
+            target=_update_analytics_async,
+            args=(request.user.id, attempt.id),
+            daemon=True
+        ).start()
+        
+        # === ASYNC: LLM feedback generation (saves ~2-7s) ===
+        def _generate_feedback_async(attempt_id, phoneme_scores, weak_phonemes, sentence_text, overall_score):
+            try:
+                from apps.llm_engine.feedback_generator import generate_pronunciation_feedback
+                feedback = generate_pronunciation_feedback(
+                    phoneme_scores=phoneme_scores,
+                    weak_phonemes=weak_phonemes,
+                    sentence_text=sentence_text,
+                    overall_score=overall_score
+                )
+                Attempt.objects.filter(id=attempt_id).update(llm_feedback=feedback)
+                logger.info(f"[ASYNC] LLM feedback saved for attempt {attempt_id}")
+            except Exception as e:
+                logger.error(f"Async LLM feedback failed: {e}")
+                # Save fallback feedback so frontend always gets something
+                try:
+                    from apps.llm_engine.feedback_generator import generate_fallback_feedback
+                    fallback = generate_fallback_feedback(overall_score, weak_phonemes)
+                    Attempt.objects.filter(id=attempt_id).update(llm_feedback=fallback)
+                except Exception:
+                    pass
+        
+        threading.Thread(
+            target=_generate_feedback_async,
+            args=(
+                attempt.id,
+                result.get('phoneme_scores', []),
+                result.get('weak_phonemes', []),
+                sentence.text,
+                result.get('overall_score', 0)
+            ),
+            daemon=True
+        ).start()
         
         # Build enriched weak phoneme details (articulation tips + practice words)
+        t_wp = _time.time()
         weak_phoneme_details = self._build_weak_phoneme_details(attempt)
+        logger.info(f"[PERF] Build weak phoneme details: {(_time.time()-t_wp)*1000:.0f}ms")
+        
+        # Generate instant fallback feedback so frontend has something to show
+        from apps.llm_engine.feedback_generator import generate_fallback_feedback
+        instant_feedback = generate_fallback_feedback(
+            result.get('overall_score', 0),
+            result.get('weak_phonemes', [])
+        )
         
         logger.info(f"Assessment completed for user {request.user.email}: score {result['overall_score']}")
         
@@ -239,7 +299,8 @@ class AssessmentView(APIView):
             'phoneme_scores': result['phoneme_scores'],
             'weak_phonemes': result['weak_phonemes'],
             'weak_phoneme_details': weak_phoneme_details,
-            'llm_feedback': result['llm_feedback'],
+            'llm_feedback': instant_feedback,  # Instant rule-based feedback
+            'llm_feedback_pending': True,       # Signal frontend to poll for LLM feedback
             'mistakes': result.get('mistakes'),
             'transcribed': result.get('transcribed'),
             'processing_time_ms': result['processing_time_ms'],
@@ -281,24 +342,39 @@ class AssessmentView(APIView):
         return attempt
     
     def _save_phoneme_errors(self, attempt, phoneme_scores):
-        """Save phoneme-level results to database."""
+        """Save phoneme-level results to database (bulk optimized)."""
         from django.conf import settings
         threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD', 0.7)
         
+        if not phoneme_scores:
+            return
+        
+        # Pre-fetch all needed phonemes in ONE query (instead of N individual GETs)
+        arpabet_list = [ps.get('phoneme') for ps in phoneme_scores if ps.get('phoneme')]
+        phoneme_map = {
+            p.arpabet: p 
+            for p in Phoneme.objects.filter(arpabet__in=arpabet_list)
+        }
+        
+        # Build all error objects and bulk_create
+        errors_to_create = []
         for ps in phoneme_scores:
-            try:
-                phoneme = Phoneme.objects.get(arpabet=ps.get('phoneme'))
-                PhonemeError.objects.create(
-                    attempt=attempt,
-                    target_phoneme=phoneme,
-                    similarity_score=ps.get('score', 0),
-                    word_context=ps.get('word', ''),
-                    position_in_word=ps.get('position', 'medial'),
-                    start_time=ps.get('start'),
-                    end_time=ps.get('end'),
-                )
-            except Phoneme.DoesNotExist:
+            phoneme = phoneme_map.get(ps.get('phoneme'))
+            if not phoneme:
                 logger.warning(f"Phoneme not found: {ps.get('phoneme')}")
+                continue
+            errors_to_create.append(PhonemeError(
+                attempt=attempt,
+                target_phoneme=phoneme,
+                similarity_score=ps.get('score', 0),
+                word_context=ps.get('word', ''),
+                position_in_word=ps.get('position', 'medial'),
+                start_time=ps.get('start'),
+                end_time=ps.get('end'),
+            ))
+        
+        if errors_to_create:
+            PhonemeError.objects.bulk_create(errors_to_create)
     
     def _build_weak_phoneme_details(self, attempt):
         """Build enriched weak phoneme details with articulation tips and practice words.
@@ -335,28 +411,42 @@ class AssessmentView(APIView):
                 sorted_phonemes = sorted(seen_phonemes.items(), key=lambda x: x[1].similarity_score)
                 weak_entries = dict(sorted_phonemes[:3])
         
+        if not weak_entries:
+            return []
+        
+        # Batch-fetch practice words for ALL weak phonemes in ONE query
+        weak_phoneme_ids = [entry.target_phoneme_id for entry in weak_entries.values()]
+        practice_words_qs = (
+            SentencePhoneme.objects
+            .filter(phoneme_id__in=weak_phoneme_ids)
+            .values('phoneme__arpabet', 'word_context')
+            .distinct()
+        )
+        
+        # Group by arpabet
+        practice_words_map = {}
+        for row in practice_words_qs:
+            arp = row['phoneme__arpabet']
+            if arp not in practice_words_map:
+                practice_words_map[arp] = []
+            if len(practice_words_map[arp]) < 3:
+                practice_words_map[arp].append(row['word_context'])
+        
         details = []
         for arpabet, error in weak_entries.items():
             phoneme = error.target_phoneme
             
-            # Get practice words from SentencePhoneme junction table
-            practice_words = list(
-                SentencePhoneme.objects
-                .filter(phoneme=phoneme)
-                .values_list('word_context', flat=True)
-                .distinct()[:3]
-            )
-            
-            # Fallback to example_word if no SentencePhoneme data
-            if not practice_words:
-                practice_words = [phoneme.example_word] if phoneme.example_word else []
+            # Use batch-fetched practice words
+            words = practice_words_map.get(arpabet, [])
+            if not words:
+                words = [phoneme.example_word] if phoneme.example_word else []
             
             details.append({
                 'arpabet': arpabet,
                 'symbol': phoneme.symbol,
                 'average_score': round(error.similarity_score, 3),
                 'articulation_tip': phoneme.articulation_tip or phoneme.description,
-                'practice_words': practice_words,
+                'practice_words': words,
             })
         
         return details
@@ -387,6 +477,47 @@ class AssessmentView(APIView):
         except Exception as e:
             logger.error(f"TTS generation failed for sentence {sentence.id}: {str(e)}")
             # Continue anyway - will fall back to dev mode in assessment
+
+
+class AttemptFeedbackView(APIView):
+    """
+    GET /api/v1/practice/attempt-feedback/?attempt_id=123
+    
+    Lightweight polling endpoint for async LLM feedback.
+    Frontend polls this after receiving scores to get the LLM-generated feedback.
+    """
+    
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        attempt_id = request.query_params.get('attempt_id')
+        if not attempt_id:
+            return Response(
+                {'error': 'attempt_id parameter required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            attempt = Attempt.objects.get(
+                id=attempt_id,
+                session__user=request.user
+            )
+        except Attempt.DoesNotExist:
+            return Response(
+                {'error': 'Attempt not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if attempt.llm_feedback:
+            return Response({
+                'ready': True,
+                'llm_feedback': attempt.llm_feedback,
+            })
+        else:
+            return Response({
+                'ready': False,
+                'llm_feedback': None,
+            })
 
 
 class SublevelCompleteView(APIView):

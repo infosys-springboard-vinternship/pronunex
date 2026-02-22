@@ -48,6 +48,7 @@ export const ENDPOINTS = {
             DETAIL: (id) => `${BASE_PATH}/practice/attempts/${id}/`,
         },
         ASSESS: `${BASE_PATH}/practice/assess/`,
+        ATTEMPT_FEEDBACK: (attemptId) => `${BASE_PATH}/practice/attempt-feedback/?attempt_id=${attemptId}`,
         SUBLEVEL_COMPLETE: `${BASE_PATH}/practice/sublevel-complete/`,
         SUBLEVEL_PROGRESS: `${BASE_PATH}/practice/sublevel-progress/`,
         SUBLEVEL_SUMMARY: (level, sublevel) => `${BASE_PATH}/practice/sublevel-summary/?level=${level}&sublevel=${sublevel}`,
