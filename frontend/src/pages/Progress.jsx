@@ -38,20 +38,41 @@ export function Progress() {
     const isLoading = progressLoading || historyLoading || phonemesLoading;
     const error = progressError || historyError || phonemesError;
 
-    // Process history data for chart
+    // Process history data for chart — fill all dates including missed days
     const chartData = useMemo(() => {
         if (!history) return [];
         const historyArray = Array.isArray(history) ? history : (history.results || history.data || []);
         if (!Array.isArray(historyArray)) return [];
 
-        return historyArray
-            .map((item) => ({
-                date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        // Build a lookup map from API data
+        const dataByDate = {};
+        historyArray.forEach(item => {
+            dataByDate[item.date] = {
                 score: Math.round((item.average_score || 0) * 100),
                 attempts: item.attempts_count || item.attempts || 0,
-            }))
-            .reverse();
-    }, [history]);
+            };
+        });
+
+        // Generate all dates for the period
+        const days = parseInt(period) || 30;
+        const allDates = [];
+        const today = new Date();
+        for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split('T')[0];
+            const entry = dataByDate[dateStr];
+            allDates.push({
+                date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                rawDate: dateStr,
+                score: entry ? entry.score : 0,
+                attempts: entry ? entry.attempts : 0,
+                missed: !entry,
+            });
+        }
+
+        return allDates;
+    }, [history, period]);
 
     // Process phoneme data for mastery section - use data from multiple sources
     const phonemeData = useMemo(() => {

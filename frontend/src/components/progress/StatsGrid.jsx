@@ -3,7 +3,7 @@
  * Displays key metrics with animated counters and sparklines
  */
 
-import { useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { AnimatedCounter } from './AnimatedCounter';
 import './StatsGrid.css';
@@ -100,47 +100,163 @@ function Sparkline({ data = [], color = '#14b8a6', height = 36 }) {
     );
 }
 
-// Mini Bar Chart Component (7-day practice minutes)
+// Interactive Mini Bar Chart Component (7-day practice minutes)
 function MiniBarChart({ data = [], color = '#14b8a6', height = 36 }) {
     const canvasRef = useRef(null);
+    const containerRef = useRef(null);
+    const animRef = useRef(null);
+    const [hoveredIdx, setHoveredIdx] = useState(-1);
+    const [animProgress, setAnimProgress] = useState(0);
+    const [tooltip, setTooltipState] = useState({ show: false, x: 0, y: 0, value: 0, day: '' });
+    const barRectsRef = useRef([]);
+
+    const dayLabels = (() => {
+        const labels = [];
+        const today = new Date();
+        for (let i = data.length - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            labels.push(new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(d));
+        }
+        return labels;
+    })();
+
+    // Animate bars on mount
+    useEffect(() => {
+        let start = null;
+        const duration = 500;
+        const animate = (ts) => {
+            if (!start) start = ts;
+            const elapsed = ts - start;
+            const progress = Math.min(elapsed / duration, 1);
+            setAnimProgress(1 - Math.pow(1 - progress, 3));
+            if (progress < 1) animRef.current = requestAnimationFrame(animate);
+        };
+        animRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(animRef.current);
+    }, [data.length]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas || data.length === 0) return;
+        const container = containerRef.current;
+        if (!canvas || !container || data.length === 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        const rect = container.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const h = Math.round(rect.height);
+
+        canvas.width = width * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = width + 'px';
+        canvas.style.height = h + 'px';
 
         const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-        const width = canvas.width;
-        const h = canvas.height;
-
+        ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, width, h);
 
         const max = Math.max(...data, 1);
-        const barWidth = Math.floor((width - (data.length + 1) * 2) / data.length);
         const padding = 2;
+        const barGap = 3;
+        const barWidth = Math.floor((width - padding * 2 - barGap * (data.length - 1)) / data.length);
+        const rects = [];
 
         data.forEach((value, index) => {
-            const barHeight = (value / max) * (h - padding * 2);
-            const x = padding + index * (barWidth + 2);
-            const y = h - padding - barHeight;
+            const fullBarH = (value / max) * (h - padding * 2);
+            const barH = fullBarH * animProgress;
+            const x = padding + index * (barWidth + barGap);
+            const y = h - padding - barH;
+            const isHovered = index === hoveredIdx;
 
-            // Gradient for each bar
-            const gradient = ctx.createLinearGradient(0, y, 0, h);
-            gradient.addColorStop(0, color);
-            gradient.addColorStop(1, color + '60');
+            rects.push({ x, y: h - padding - fullBarH, w: barWidth, h: fullBarH, idx: index });
 
-            ctx.fillStyle = gradient;
-            ctx.fillRect(x, y, barWidth, barHeight);
+            if (value > 0) {
+                if (isHovered) {
+                    ctx.save();
+                    ctx.shadowColor = color + '80';
+                    ctx.shadowBlur = 8;
+                }
+
+                const gradient = ctx.createLinearGradient(0, y, 0, h);
+                gradient.addColorStop(0, isHovered ? '#34d399' : color);
+                gradient.addColorStop(1, isHovered ? color : color + '60');
+
+                const r = Math.min(3, barWidth / 2);
+                ctx.beginPath();
+                ctx.moveTo(x + r, y);
+                ctx.lineTo(x + barWidth - r, y);
+                ctx.quadraticCurveTo(x + barWidth, y, x + barWidth, y + r);
+                ctx.lineTo(x + barWidth, h - padding);
+                ctx.lineTo(x, h - padding);
+                ctx.lineTo(x, y + r);
+                ctx.quadraticCurveTo(x, y, x + r, y);
+                ctx.closePath();
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                if (isHovered) ctx.restore();
+            } else {
+                ctx.fillStyle = color + '20';
+                ctx.fillRect(x, h - padding - 2, barWidth, 2);
+            }
         });
-    }, [data, color, height]);
+
+        barRectsRef.current = rects;
+    }, [data, color, height, hoveredIdx, animProgress]);
+
+    const handleMouseMove = (e) => {
+        const container = containerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+
+        let found = -1;
+        for (const bar of barRectsRef.current) {
+            if (mx >= bar.x - 2 && mx <= bar.x + bar.w + 2) {
+                found = bar.idx;
+                break;
+            }
+        }
+
+        if (found >= 0) {
+            const bar = barRectsRef.current[found];
+            setHoveredIdx(found);
+            setTooltipState({
+                show: true,
+                x: bar.x + bar.w / 2,
+                y: Math.max(bar.y - 6, 0),
+                value: data[found],
+                day: dayLabels[found] || '',
+            });
+        } else {
+            setHoveredIdx(-1);
+            setTooltipState(prev => ({ ...prev, show: false }));
+        }
+    };
+
+    const handleMouseLeave = () => {
+        setHoveredIdx(-1);
+        setTooltipState(prev => ({ ...prev, show: false }));
+    };
 
     return (
-        <canvas
-            ref={canvasRef}
-            width={120}
-            height={height}
-            className="stats-grid__sparkline"
-        />
+        <div
+            ref={containerRef}
+            className="stats-grid__mini-chart-wrapper"
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{ position: 'relative', width: '100%', height: height, cursor: hoveredIdx >= 0 ? 'pointer' : 'default' }}
+        >
+            <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
+            {tooltip.show && (
+                <div
+                    className="stats-grid__mini-tooltip"
+                    style={{ left: tooltip.x, top: tooltip.y }}
+                >
+                    {dayLabels[hoveredIdx]}: {Math.round(tooltip.value)}m
+                </div>
+            )}
+        </div>
     );
 }
 
@@ -237,8 +353,21 @@ export function StatsGrid({ stats, sparklineData, trend, sessionHistory = [] }) 
         warning: '#f59e0b',
     };
 
-    // Prepare 7-day practice minutes data (last 7 days from session history)
-    const practiceMinutesData = sessionHistory.slice(-7).map(s => s.duration || 0);
+    // Build date-aligned 7-day practice minutes array
+    const practiceMinutesData = (() => {
+        const days = [];
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            days.push({ date: d.toISOString().split('T')[0], minutes: 0 });
+        }
+        sessionHistory.forEach(s => {
+            const match = days.find(d => d.date === s.date);
+            if (match) match.minutes = s.duration || 0;
+        });
+        return days.map(d => d.minutes);
+    })();
 
     // Calculate next streak milestone
     const currentStreak = stats.streak.current_streak || 0;
@@ -294,8 +423,8 @@ export function StatsGrid({ stats, sparklineData, trend, sessionHistory = [] }) 
                 gradient="slate"
                 customVisualization={
                     <MiniBarChart
-                        data={practiceMinutesData.length > 0 
-                            ? practiceMinutesData 
+                        data={practiceMinutesData.length > 0
+                            ? practiceMinutesData
                             : [0, 0, 0, 0, 0, 0, 0] // 7 days of zero data as fallback
                         }
                         color={CHART_COLORS.neutral}

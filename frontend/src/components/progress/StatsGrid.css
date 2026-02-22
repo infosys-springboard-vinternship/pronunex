@@ -283,3 +283,38 @@
         opacity: 0.9;
     }
 }
+
+/* Interactive Mini Bar Chart */
+.stats-grid__mini-chart-wrapper {
+    margin-top: var(--space-2);
+    z-index: 1;
+}
+
+.stats-grid__mini-tooltip {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    pointer-events: none;
+    z-index: 10;
+    background: var(--surface-active, #1e293b);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    padding: 3px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #34d399;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: miniTooltipIn 0.12s ease-out;
+}
+
+@keyframes miniTooltipIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -90%);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -100%);
+    }
+}
