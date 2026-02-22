@@ -1183,7 +1183,7 @@ export function Practice() {
     return (
         <div className="practice">
             {/* Progress Header with Level Indicator */}
-            <header className="practice__progress-header">
+            <header className="practice__progress-header practice__progress-header--compact">
                 <div className="practice__progress-info">
                     <h1 className="practice__title">
                         {isWeakSetMode ? 'Weak Phoneme Practice' : 'Practice Session'}
@@ -1220,6 +1220,7 @@ export function Practice() {
                     averageScore={averageScore}
                     currentLevel={activeDifficulty}
                     onChangeLevel={handleChangeLevel}
+                    compact={true}
                 />
             </header>
 

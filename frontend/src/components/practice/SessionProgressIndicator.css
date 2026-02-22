@@ -11,6 +11,7 @@
     border: 1px solid var(--border-primary);
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-sm);
+    transition: padding 0.3s ease, gap 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Level badge row */
@@ -30,6 +31,7 @@
     font-weight: var(--font-semibold);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    transition: padding 0.3s ease, font-size 0.3s ease;
 }
 
 .session-progress__level-badge--beginner {
@@ -81,6 +83,7 @@
     display: flex;
     align-items: center;
     gap: var(--space-6);
+    transition: gap 0.3s ease;
 }
 
 .session-progress__stat {
@@ -99,6 +102,7 @@
     font-weight: var(--font-bold);
     color: var(--text-primary);
     font-variant-numeric: tabular-nums;
+    transition: font-size 0.3s ease;
 }
 
 .session-progress__stat--score .session-progress__stat-value {
@@ -128,6 +132,8 @@
     display: flex;
     gap: 3px;
     flex-wrap: wrap;
+    transition: opacity 0.3s ease, max-height 0.3s ease;
+    overflow: hidden;
 }
 
 .session-progress__dot {
@@ -172,6 +178,7 @@
     background: var(--bg-tertiary);
     border-radius: var(--radius-full);
     overflow: hidden;
+    transition: height 0.3s ease, opacity 0.3s ease;
 }
 
 .session-progress__bar-fill {
@@ -181,4 +188,78 @@
             var(--color-primary-600));
     border-radius: var(--radius-full);
     transition: width 0.4s ease;
+}
+
+/* ============================================
+   Compact Mode — Premium inline bar
+   ============================================ */
+.session-progress--compact {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    padding: 0;
+    border-radius: var(--radius-xl);
+    box-shadow: none;
+    border: 1px solid var(--border-primary);
+    background: var(--bg-secondary);
+}
+
+/* Each section as a padded inline cell with separator */
+.session-progress--compact .session-progress__level {
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    border-right: 1px solid var(--border-primary);
+    flex-shrink: 0;
+}
+
+.session-progress--compact .session-progress__level-badge {
+    padding: 2px var(--space-2);
+    font-size: var(--text-xs);
+    letter-spacing: 0.04em;
+}
+
+.session-progress--compact .session-progress__change-btn {
+    padding: 2px var(--space-2);
+    font-size: var(--text-xs);
+    border-radius: var(--radius-full);
+    border-color: var(--border-secondary);
+}
+
+.session-progress--compact .session-progress__stats {
+    gap: var(--space-4);
+    padding: var(--space-1) var(--space-3);
+    border-right: 1px solid var(--border-primary);
+    flex-shrink: 0;
+}
+
+.session-progress--compact .session-progress__stat-value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+}
+
+.session-progress--compact .session-progress__stat-label {
+    font-size: var(--text-xs);
+    opacity: 0.7;
+}
+
+.session-progress--compact .session-progress__stat-sep,
+.session-progress--compact .session-progress__stat-total {
+    font-size: var(--text-xs);
+}
+
+/* Hide dots in compact mode */
+.session-progress--compact .session-progress__dots {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    position: absolute;
+    pointer-events: none;
+}
+
+/* Hide progress bar in compact — 4/5 Completed text is sufficient */
+.session-progress--compact .session-progress__bar {
+    display: none;
 }

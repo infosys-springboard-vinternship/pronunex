@@ -3,10 +3,11 @@
  * 
  * Displays letter-by-letter error highlighting for pronunciation feedback.
  * Shows each letter color-coded as correct (green) or incorrect (red).
- * Adapted from ai-pronunciation-trainer project.
+ * Premium animated tooltips for error letters.
  */
 
 import { Check, X, AlertCircle } from 'lucide-react';
+import { PremiumTooltip } from './PremiumTooltip';
 import './LetterHighlight.css';
 
 /**
@@ -18,17 +19,19 @@ export function HighlightedWord({ wordData, showTooltip = true }) {
     const { word, actual, letters = [], accuracy, error_descriptions = [] } = wordData;
     const isPerfect = accuracy === 100;
 
-    return (
+    // Collect error info from incorrect letters for the word-level tooltip
+    const errorLetters = letters.filter(l => !l.is_correct);
+    const primaryError = errorLetters[0];
+
+    const wordContent = (
         <span
             className={`letter-highlight__word ${isPerfect ? 'letter-highlight__word--perfect' : 'letter-highlight__word--has-errors'}`}
-            title={showTooltip ? error_descriptions.join(' | ') : undefined}
         >
             {letters.map((letter, idx) => (
                 <span
                     key={idx}
                     className={`letter-highlight__letter ${letter.is_correct ? 'letter-highlight__letter--correct' : 'letter-highlight__letter--incorrect'}`}
                     data-error-type={letter.error_type || 'none'}
-                    title={letter.is_correct ? 'Correct' : `${letter.error_type}: expected '${letter.expected}', got '${letter.actual || 'missing'}'`}
                 >
                     {letter.letter}
                 </span>
@@ -40,6 +43,22 @@ export function HighlightedWord({ wordData, showTooltip = true }) {
             )}
         </span>
     );
+
+    // Wrap with tooltip only for words with errors
+    if (!isPerfect && showTooltip && primaryError) {
+        return (
+            <PremiumTooltip
+                errorType={primaryError.error_type}
+                expected={primaryError.expected}
+                actual={primaryError.actual}
+                errors={error_descriptions}
+            >
+                {wordContent}
+            </PremiumTooltip>
+        );
+    }
+
+    return wordContent;
 }
 
 /**

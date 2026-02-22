@@ -1,7 +1,7 @@
 /**
  * SessionProgressIndicator Component
  * Visual progress indicator shown during practice sessions.
- * Displays sentence completion, average score, and a "Change Level" action.
+ * Supports expanded and compact (sticky header) modes.
  */
 
 import { BarChart3, ArrowLeft } from 'lucide-react';
@@ -14,10 +14,10 @@ function SessionProgressIndicator({
     averageScore,
     currentLevel,
     onChangeLevel,
+    compact = false,
 }) {
     const completionPercent = totalSentences > 0 ? (completedCount / totalSentences) * 100 : 0;
 
-    // Build segment data for the dots
     const segments = Array.from({ length: totalSentences }, (_, i) => {
         if (i < currentIndex && completedCount > i) return 'completed';
         if (i === currentIndex) return 'current';
@@ -31,7 +31,7 @@ function SessionProgressIndicator({
     };
 
     return (
-        <div className="session-progress">
+        <div className={`session-progress ${compact ? 'session-progress--compact' : ''}`}>
             {/* Level badge + change button */}
             <div className="session-progress__level">
                 <span className={`session-progress__level-badge session-progress__level-badge--${currentLevel}`}>
@@ -59,7 +59,7 @@ function SessionProgressIndicator({
 
                 {completedCount > 0 && (
                     <div className="session-progress__stat session-progress__stat--score">
-                        <BarChart3 size={16} />
+                        <BarChart3 size={14} />
                         <span className="session-progress__stat-value">
                             {Math.round(averageScore * 100)}%
                         </span>

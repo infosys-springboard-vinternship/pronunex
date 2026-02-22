@@ -82,6 +82,7 @@
     text-decoration-style: wavy;
     text-decoration-color: var(--color-error-500);
     text-underline-offset: 4px;
+    cursor: help;
 }
 
 .letter-highlight__letter--incorrect[data-error-type="deletion"] {
