@@ -25,7 +25,7 @@ import './Progress.css';
 
 export function Progress() {
     const navigate = useNavigate();
-    const [period, setPeriod] = useState('30');
+    const [period, setPeriod] = useState('7');
 
     // Fetch all required data
     const { data: progressData, isLoading: progressLoading, error: progressError, refetch: refetchProgress } =
