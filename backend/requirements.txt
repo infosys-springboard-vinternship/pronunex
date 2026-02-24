@@ -25,10 +25,14 @@ soundfile>=0.12
 # NLP & AI
 g2p_en==2.1.0
 transformers==4.38.2
-torch==2.2.2
-torchaudio==2.2.2
+torch==2.2.2+cpu
+torchaudio==2.2.2+cpu
 dtwalign>=0.1.0
 
 # LLM Integration
 groq>=0.4
 cerebras-cloud-sdk>=1.0
+
+# Production Server
+gunicorn==21.2.0
+whitenoise==6.6.0

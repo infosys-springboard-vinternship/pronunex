@@ -1,0 +1,46 @@
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.production
+
+# Database
+db.sqlite3
+db.sqlite3-journal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+eggs/
+*.egg
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+
+# Django
+staticfiles/
+media/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML model cache
+*.pt
+*.bin
+*.safetensors
+
+# Test files
+test_temp/
