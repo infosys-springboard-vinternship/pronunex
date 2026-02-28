@@ -15,9 +15,13 @@ class PracticeConfig(AppConfig):
         # Import signals to register handlers
         import apps.practice.signals
         
-        # Pre-warm all ML models in background thread
-        # This eliminates the ~17-second cold-start delay on first request
-        threading.Thread(target=self._preload_models, daemon=True).start()
+        # Pre-warm all ML models in background thread (skip on Render free tier)
+        from django.conf import settings
+        if getattr(settings, 'ENABLE_ML_MODELS', True):
+            threading.Thread(target=self._preload_models, daemon=True).start()
+        else:
+            logger.info("[STARTUP] ML models DISABLED (ENABLE_ML_MODELS=false). "
+                       "Auth, library, and reference audio still work.")
     
     @staticmethod
     def _preload_models():

@@ -12,6 +12,8 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
+      - key: ENABLE_ML_MODELS
+        value: "false"
       - key: PYTHON_VERSION
         value: "3.11.6"
       # Database (Supabase PostgreSQL)

@@ -153,6 +153,21 @@ class AssessmentView(APIView):
     parser_classes = [MultiPartParser, FormParser]
     
     def post(self, request):
+        # Check if ML models are enabled (disabled on Render free tier)
+        from django.conf import settings as django_settings
+        if not getattr(django_settings, 'ENABLE_ML_MODELS', True):
+            return Response({
+                'success': False,
+                'error': 'ml_disabled',
+                'message': (
+                    'Pronunciation analysis is currently unavailable. '
+                    'The backend is hosted on Render free tier to save resources. '
+                    'All other features (login, library, reference audio) work normally. '
+                    'Contact the admin to enable full ML-powered analysis.'
+                ),
+                'suggestion': 'You can still browse sentences, listen to reference audio, and track your progress.',
+            }, status=status.HTTP_200_OK)
+
         serializer = AttemptCreateSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(

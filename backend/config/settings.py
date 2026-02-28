@@ -243,6 +243,11 @@ SCORING_CONFIG = {
     'SILENCE_TRIM_DB': 20,          # dB threshold for silence trimming
 }
 
+# ML Model Toggle (set to false on Render free tier to save RAM)
+# When disabled: login, signup, library, reference audio all work normally
+# but pronunciation assessment returns a friendly "service limited" message
+ENABLE_ML_MODELS = os.getenv('ENABLE_ML_MODELS', 'true').lower() == 'true'
+
 # Logging Configuration
 LOGGING = {
     'version': 1,
