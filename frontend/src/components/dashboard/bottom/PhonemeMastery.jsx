@@ -1,33 +1,33 @@
 import { useNavigate } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
-import { useApi } from '../../../hooks/useApi';
-import { ENDPOINTS } from '../../../api/endpoints';
-import { Spinner } from '../../Loader';
 import './PhonemeMastery.css';
 
-export function PhonemeMastery() {
+export function PhonemeMastery({ dashboardData }) {
     const navigate = useNavigate();
-    const { data: stats, isLoading } = useApi(ENDPOINTS.ANALYTICS.PHONEME_STATS);
 
-    // Mock data if endpoint returns nothing or error (for robust UI dev)
-    const phonemeData = stats?.length > 0 ? stats : [
-        { phoneme: 'th', score: 0.85 },
-        { phoneme: 'r', score: 0.45 },
-        { phoneme: 'l', score: 0.62 },
-        { phoneme: 'ae', score: 0.92 },
-        { phoneme: 'sh', score: 0.78 },
-        { phoneme: 'ch', score: 0.35 },
-        { phoneme: 'v', score: 0.88 },
-        { phoneme: 'f', score: 0.95 },
-    ];
+    // Derive phoneme data from parent's dashboard data (phoneme_progress)
+    const phonemeData = (() => {
+        const progressArr = dashboardData?.phoneme_progress;
+        if (Array.isArray(progressArr) && progressArr.length > 0) {
+            return progressArr.map(item => ({
+                phoneme: item.phoneme?.arpabet || item.phoneme || item.phoneme_arpabet || '',
+                score: item.current_score ?? item.score ?? 0,
+            }));
+        }
+        // Fallback if no data
+        return [
+            { phoneme: 'th', score: 0 },
+            { phoneme: 'r', score: 0 },
+            { phoneme: 'l', score: 0 },
+            { phoneme: 'ae', score: 0 },
+        ];
+    })();
 
     const getScoreColor = (score) => {
         if (score >= 0.8) return '#10b981'; // Success
         if (score >= 0.5) return '#f59e0b'; // Warning
         return '#ef4444'; // Danger
     };
-
-    if (isLoading) return <div className="phoneme-mastery"><Spinner size="sm" /></div>;
 
     return (
         <div className="phoneme-mastery">

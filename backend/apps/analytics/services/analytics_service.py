@@ -70,16 +70,22 @@ class AnalyticsService:
         progress.best_score = today_stats.get('best', 0)
         
         # Calculate sessions count and total practice minutes
+        # OPTIMIZED: Single annotate() query instead of per-session N+1 loop
+        from django.db.models import Min, Max as DbMax, Count as DbCount
         from apps.practice.models import UserSession
         
         sessions_today = UserSession.objects.filter(
             user=user,
             started_at__date=today
+        ).annotate(
+            first_attempt_at=Min('attempts__created_at'),
+            last_attempt_at=DbMax('attempts__created_at'),
+            attempt_count=DbCount('attempts'),
         )
         
         progress.sessions_count = sessions_today.count()
         
-        # Calculate total practice minutes from sessions with end times
+        # Calculate total practice minutes from annotated session data
         total_minutes = 0
         for session in sessions_today:
             if session.ended_at and session.started_at:
@@ -88,17 +94,11 @@ class AnalyticsService:
                 if 0 < minutes < 180:  # Sanity: cap at 3 hours
                     total_minutes += minutes
             else:
-                # Fallback: estimate from attempt timestamps + processing time
-                session_attempts = Attempt.objects.filter(
-                    session=session
-                ).order_by('created_at')
-                
-                if session_attempts.exists():
-                    first = session_attempts.first().created_at
-                    last = session_attempts.last().created_at
-                    span = (last - first).total_seconds() / 60
+                # Fallback: use annotated attempt timestamps + buffer
+                if session.first_attempt_at and session.last_attempt_at:
+                    span = (session.last_attempt_at - session.first_attempt_at).total_seconds() / 60
                     # Add ~15 seconds per attempt for recording time
-                    buffer = (session_attempts.count() * 15) / 60
+                    buffer = (session.attempt_count * 15) / 60
                     total_minutes += span + buffer
         
         progress.total_practice_minutes = round(total_minutes, 1)

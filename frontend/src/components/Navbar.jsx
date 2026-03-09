@@ -21,8 +21,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useApi } from '../hooks/useApi';
-import { ENDPOINTS } from '../api/endpoints';
+import { useDashboard } from '../hooks/useDashboard';
 import { getAvatarById } from '../config/avatarConfig';
 import './Navbar.css';
 
@@ -41,11 +40,8 @@ export function Navbar() {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const dropdownRef = useRef(null);
 
-    // Fetch user progress for streak - refetch when location changes
-    const { data: progress, refetch: refetchProgress } = useApi(
-        isAuthenticated ? ENDPOINTS.ANALYTICS.PROGRESS : null,
-        { deps: [location.pathname] }
-    );
+    // Use shared hook — deduplicates with Dashboard's call, no extra API hit
+    const { data: progress } = useDashboard({ enabled: isAuthenticated });
 
     // Extract streak - handle multiple possible structures from API
     const streakDays = useMemo(() => {

@@ -1,0 +1,218 @@
+/* ===== Dashboard Skeleton — Shimmer Loading ===== */
+
+/* Shimmer animation */
+@keyframes shimmer {
+    0% {
+        background-position: -400px 0;
+    }
+
+    100% {
+        background-position: 400px 0;
+    }
+}
+
+/* Base bone element */
+.skel__bone {
+    background: linear-gradient(90deg,
+            #e2e8f0 25%,
+            #f1f5f9 50%,
+            #e2e8f0 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+/* Container */
+.dashboard-skeleton {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    animation: fadeInSkel 0.3s ease-out;
+}
+
+@keyframes fadeInSkel {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Header */
+.skel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+}
+
+.skel__header-text {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Cards */
+.skel__card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+/* Main Grid — match dashboard layout */
+.skel__grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+}
+
+/* Left Column */
+.skel__left {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.skel__profile {
+    text-align: center;
+}
+
+.skel__daily-goal {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.skel__goal-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.skel__badge-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+/* Center Column */
+.skel__center {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Today strip */
+.skel__today {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.skel__today-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Stats Grid */
+.skel__stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.skel__stat-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Chart */
+.skel__chart-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* AI Insight */
+.skel__insight {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+/* Bottom Grid */
+.skel__bottom {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+
+.skel__bottom-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== Dark mode support ===== */
+[data-theme="dark"] .skel__bone,
+.dark .skel__bone {
+    background: linear-gradient(90deg,
+            rgba(255, 255, 255, 0.06) 25%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.06) 75%);
+    background-size: 800px 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+}
+
+[data-theme="dark"] .skel__card,
+.dark .skel__card {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="dark"] .skel__daily-goal,
+.dark .skel__daily-goal {
+    border-top-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+    .skel__grid {
+        grid-template-columns: 1fr;
+    }
+
+    .skel__stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .skel__bottom {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .dashboard-skeleton {
+        padding: 1rem;
+    }
+
+    .skel__stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .skel__header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+}

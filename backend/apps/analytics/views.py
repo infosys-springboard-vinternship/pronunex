@@ -2,9 +2,11 @@
 API Views for analytics and progress tracking.
 
 Views are thin HTTP handlers - business logic is in services layer.
+OPTIMIZED: Dashboard and phoneme views cached via Django LocMemCache.
 """
 
 import logging
+from django.core.cache import cache
 from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -20,23 +22,33 @@ from .services import AnalyticsService, AggregationService
 
 logger = logging.getLogger(__name__)
 
+# Cache TTL constants (seconds)
+DASHBOARD_CACHE_TTL = 60 * 5   # 5 minutes
+PHONEME_CACHE_TTL = 60 * 10    # 10 minutes
+
 
 class ProgressDashboardView(APIView):
     """
     GET /api/v1/analytics/progress/
-    
+
     Get comprehensive progress dashboard data.
+    Cached per-user for 5 minutes; invalidated on new attempt via signal.
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         days = int(request.query_params.get('days', 30))
-        
+        cache_key = f"dashboard:{request.user.id}:{days}"
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         # Use aggregation service for all calculations
         service = AggregationService(request.user)
         stats = service.get_dashboard_stats(days=days)
-        
+
         response_data = {
             'total_sessions': stats['session_stats'].get('total_sessions', 0),
             'total_attempts': stats['attempt_stats'].get('total_attempts', 0),
@@ -47,7 +59,6 @@ class ProgressDashboardView(APIView):
             'score_trend': stats['score_trend'],
             'recent_progress': UserProgressSerializer(stats['recent_progress'], many=True).data,
             'streak': StreakSerializer(stats['streak']).data,
-
             'phoneme_progress': PhonemeProgressSerializer(stats['phoneme_progress'], many=True).data,
             'weekly_scores': stats['weekly_scores'],
             'weekly_labels': stats['weekly_labels'],
@@ -55,42 +66,53 @@ class ProgressDashboardView(APIView):
             'daily_goal_target': stats.get('daily_goal_target', 10),
             'computed_level': stats.get('computed_level', {}),
         }
-        
+
+        cache.set(cache_key, response_data, timeout=DASHBOARD_CACHE_TTL)
         return Response(response_data)
 
 
 class PhonemeAnalyticsView(APIView):
     """
     GET /api/v1/analytics/phonemes/
-    
+
     Get detailed per-phoneme analytics.
+    Cached per-user for 10 minutes; invalidated on new attempt via signal.
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
+        cache_key = f"phoneme_analytics:{request.user.id}"
+
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
+
         service = AggregationService(request.user)
-        return Response(service.get_phoneme_analytics())
+        data = service.get_phoneme_analytics()
+
+        cache.set(cache_key, data, timeout=PHONEME_CACHE_TTL)
+        return Response(data)
 
 
 class HistoryView(generics.ListAPIView):
     """
     GET /api/v1/analytics/history/
-    
+
     Get daily progress history.
     """
-    
+
     serializer_class = UserProgressSerializer
     permission_classes = [IsAuthenticated]
-    
+
     def get_queryset(self):
         from datetime import timedelta
         from django.utils import timezone
-        
+
         days = int(self.request.query_params.get('days', 30))
         end_date = timezone.now().date()
         start_date = end_date - timedelta(days=days)
-        
+
         return UserProgress.objects.filter(
             user=self.request.user,
             date__gte=start_date,
@@ -101,19 +123,19 @@ class HistoryView(generics.ListAPIView):
 class WeakPhonemesView(APIView):
     """
     GET /api/v1/analytics/weak-phonemes/
-    
+
     Get list of user's current weak phonemes.
     """
-    
+
     permission_classes = [IsAuthenticated]
-    
+
     def get(self, request):
         from django.conf import settings
         threshold = settings.SCORING_CONFIG.get('WEAK_PHONEME_THRESHOLD', 0.7)
-        
+
         service = AggregationService(request.user)
         weak_phonemes = service.get_weak_phonemes()
-        
+
         return Response({
             'weak_phonemes': weak_phonemes,
             'threshold': threshold,
@@ -126,7 +148,7 @@ def update_user_analytics(user, attempt):
     """
     Update analytics after a new attempt.
     Called from assessment service.
-    
+
     This is a wrapper for AnalyticsService.update_after_attempt()
     maintained for backward compatibility.
     """

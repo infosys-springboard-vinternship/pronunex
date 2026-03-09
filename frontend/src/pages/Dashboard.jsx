@@ -19,10 +19,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { useApi } from '../hooks/useApi';
-import { ENDPOINTS } from '../api/endpoints';
-import { Spinner } from '../components/Loader';
+import { useDashboard } from '../hooks/useDashboard';
 import { ErrorState } from '../components/ErrorState';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
 import './Dashboard.css';
 import '../components/progress/MilestonesBadges.css'; // Import badge styles
 import { getAvatarById } from '../config/avatarConfig';
@@ -426,7 +425,7 @@ export function Dashboard() {
     const { user } = useAuth();
     const { settings } = useSettings();
     const navigate = useNavigate();
-    const { data: progress, isLoading, error, refetch } = useApi(ENDPOINTS.ANALYTICS.PROGRESS);
+    const { data: progress, isLoading, error, refetch } = useDashboard();
 
     // Calculate milestones directly from progress data
     const milestones = useMemo(() => {
@@ -463,12 +462,7 @@ export function Dashboard() {
     }, [progress]);
 
     if (isLoading) {
-        return (
-            <div className="dashboard-loading">
-                <Spinner size="lg" />
-                <p>Loading your progress...</p>
-            </div>
-        );
+        return <DashboardSkeleton />;
     }
 
     if (error) {
@@ -716,10 +710,10 @@ export function Dashboard() {
                     gap: '1.5rem',
                     marginTop: '0.5rem'
                 }}>
-                    <SessionHistory />
+                    <SessionHistory dashboardData={stats} />
                     <RecommendedSentences />
-                    <PhonemeMastery />
-                    <PracticeTimeChart />
+                    <PhonemeMastery dashboardData={stats} />
+                    <PracticeTimeChart dashboardData={stats} />
                 </section>
 
             </div>

@@ -2,10 +2,12 @@
 Signal handlers for practice app.
 
 Automatically end sessions after a period of inactivity.
+Invalidate dashboard cache on new attempts.
 """
 
 import logging
 from datetime import timedelta
+from django.core.cache import cache
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -13,6 +15,17 @@ from django.utils import timezone
 from .models import Attempt, UserSession
 
 logger = logging.getLogger(__name__)
+
+
+@receiver(post_save, sender=Attempt)
+def invalidate_dashboard_cache(sender, instance, created, **kwargs):
+    """Delete cached dashboard when a new attempt is submitted."""
+    if not created:
+        return
+    user_id = instance.session.user_id
+    for days in (7, 30, 90):
+        cache.delete(f"dashboard:{user_id}:{days}")
+    cache.delete(f"phoneme_analytics:{user_id}")
 
 
 @receiver(post_save, sender=Attempt)

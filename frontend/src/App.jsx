@@ -39,14 +39,19 @@ const LandingPage = lazy(() => import('./pages/LandingPage'));
 
 function ProtectedRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth();
-    if (isLoading) return <LoadingOverlay message="Loading..." />;
+    if (isLoading) {
+        // If a token exists, render children optimistically (they'll show skeleton)
+        // This avoids the blank screen between auth check and data loading
+        const hasToken = sessionStorage.getItem('access_token');
+        return hasToken ? children : null;
+    }
     if (!isAuthenticated) return <Navigate to="/login" replace />;
     return children;
 }
 
 function PublicRoute({ children }) {
     const { isAuthenticated, isLoading } = useAuth();
-    if (isLoading) return <LoadingOverlay message="Loading..." />;
+    if (isLoading) return null;
     if (isAuthenticated) return <Navigate to="/dashboard" replace />;
     return children;
 }

@@ -184,9 +184,8 @@ export function useAudio({ maxDuration = 30, onRecordingComplete } = {}) {
                 setAudioUrl(url);
                 setState(AUDIO_STATES.IDLE);
 
-                if (onRecordingComplete) {
-                    onRecordingComplete(blob);
-                }
+                // NOTE: Do NOT auto-submit here.
+                // User reviews the recording first, then clicks Submit manually.
             };
 
             mediaRecorder.onerror = () => {
@@ -217,7 +216,7 @@ export function useAudio({ maxDuration = 30, onRecordingComplete } = {}) {
             setState(AUDIO_STATES.ERROR);
             return false;
         }
-    }, [maxDuration, requestPermission, cleanup, onRecordingComplete]);
+    }, [maxDuration, requestPermission, cleanup]);
 
     /**
      * Stop recording

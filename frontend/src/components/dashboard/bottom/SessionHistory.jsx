@@ -1,19 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { History, Clock, ArrowRight } from 'lucide-react';
-import { useApi } from '../../../hooks/useApi';
-import { ENDPOINTS } from '../../../api/endpoints';
-import { Spinner } from '../../Loader';
 import './SessionHistory.css';
 
-export function SessionHistory() {
+export function SessionHistory({ dashboardData }) {
     const navigate = useNavigate();
-    // Use ANALYTICS.HISTORY endpoint - same as Progress page
-    const { data: history, isLoading } = useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=30`);
 
-    // Process history data similar to Progress page
+    // Derive session history from parent's dashboard data (recent_progress)
     const recentSessions = (() => {
-        if (!history) return [];
-        const historyArray = Array.isArray(history) ? history : (history.results || history.data || []);
+        const historyArray = dashboardData?.recent_progress || [];
         if (!Array.isArray(historyArray)) return [];
 
         return historyArray.slice(0, 3).map(item => ({
@@ -40,14 +34,6 @@ export function SessionHistory() {
         if (percentage >= 60) return 'session-history__score-badge--medium';
         return 'session-history__score-badge--low';
     };
-
-    if (isLoading) {
-        return (
-            <div className="session-history">
-                <Spinner size="sm" />
-            </div>
-        );
-    }
 
     return (
         <div className="session-history">

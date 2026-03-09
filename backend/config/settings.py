@@ -99,6 +99,14 @@ else:
         }
     }
 
+# Cache Configuration (in-process, no Redis required)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'pronunex-dashboard',
+    }
+}
+
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},

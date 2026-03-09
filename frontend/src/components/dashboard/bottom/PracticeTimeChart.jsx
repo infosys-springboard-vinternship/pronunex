@@ -5,7 +5,7 @@ import { ENDPOINTS } from '../../../api/endpoints';
 import { Spinner } from '../../Loader';
 import './PracticeTimeChart.css';
 
-export function PracticeTimeChart() {
+export function PracticeTimeChart({ dashboardData }) {
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const animRef = useRef(null);
@@ -13,7 +13,8 @@ export function PracticeTimeChart() {
     const [tooltip, setTooltip] = useState({ show: false, x: 0, y: 0, minutes: 0, day: '', date: '' });
     const [animProgress, setAnimProgress] = useState(0);
     const barRectsRef = useRef([]);
-    const { data: history, isLoading } = useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=7`);
+    // Only fetch from API if dashboardData not provided
+    const { data: history, isLoading } = useApi(`${ENDPOINTS.ANALYTICS.HISTORY}?days=7`, { immediate: !dashboardData });
 
     // Process history into last 7 days of practice minutes
     const chartData = (() => {
@@ -30,8 +31,10 @@ export function PracticeTimeChart() {
             });
         }
 
-        if (history) {
-            const historyArray = Array.isArray(history) ? history : (history.results || history.data || []);
+        // Use dashboardData.recent_progress if available, else fall back to API history
+        const source = dashboardData?.recent_progress || history;
+        if (source) {
+            const historyArray = Array.isArray(source) ? source : (source.results || source.data || []);
             if (Array.isArray(historyArray)) {
                 historyArray.forEach(item => {
                     const dateStr = item.date;
@@ -215,7 +218,7 @@ export function PracticeTimeChart() {
         setTooltip(prev => ({ ...prev, show: false }));
     }, []);
 
-    if (isLoading) {
+    if (isLoading && !dashboardData) {
         return (
             <div className="practice-time-chart">
                 <Spinner size="sm" />
