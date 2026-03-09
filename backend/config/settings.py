@@ -83,8 +83,11 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 if USE_SUPABASE and DATABASE_URL:
     # Use Supabase PostgreSQL
+    _db_config = dj_database_url.parse(DATABASE_URL)
+    _db_config['CONN_MAX_AGE'] = 300          # Close connections older than 5 min
+    _db_config['CONN_HEALTH_CHECKS'] = True   # Verify connection before reuse
     DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
+        'default': _db_config
     }
 else:
     # Use local SQLite with improved concurrency settings
