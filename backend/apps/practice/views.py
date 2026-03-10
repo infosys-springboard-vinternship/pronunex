@@ -453,27 +453,35 @@ class AssessmentView(APIView):
     
     def _ensure_reference_audio(self, sentence):
         """Ensure reference audio exists, generate via TTS if missing."""
-        import os
+        # Use storage-agnostic check (works with both local and Supabase)
+        if sentence.has_audio():
+            return
         
-        audio_path = sentence.get_audio_source()
-        
-        # Check if audio file exists
-        if audio_path and os.path.exists(audio_path):
-            return  # Audio already exists
-        
-        # Generate TTS audio
+        # Generate TTS audio to temp file, then save via Django storage API
         try:
-            from services.tts_service import generate_sentence_audio
+            from services.tts_service import get_tts_service
+            import tempfile
+            import os
+            from django.core.files.base import ContentFile
+            
             logger.info(f"Auto-generating TTS for sentence {sentence.id}")
-            audio_path = generate_sentence_audio(sentence)
             
-            # Update sentence with new audio path
-            from django.conf import settings
-            relative_path = os.path.relpath(audio_path, settings.MEDIA_ROOT)
-            sentence.audio_file = relative_path
-            sentence.save(update_fields=['audio_file'])
+            tts = get_tts_service()
+            temp_path = tts.generate_for_sentence(sentence)
             
-            logger.info(f"TTS generated successfully for sentence {sentence.id}")
+            if temp_path and os.path.exists(temp_path):
+                # Read the temp file and save via Django storage
+                with open(temp_path, 'rb') as f:
+                    audio_data = f.read()
+                
+                filename = f'references/sentence_{sentence.id}.wav'
+                sentence.audio_file.save(filename, ContentFile(audio_data), save=True)
+                
+                # Clean up temp file
+                os.unlink(temp_path)
+                logger.info(f"TTS generated and uploaded for sentence {sentence.id}")
+            else:
+                logger.warning(f"TTS returned no audio for sentence {sentence.id}")
         except Exception as e:
             logger.error(f"TTS generation failed for sentence {sentence.id}: {str(e)}")
             # Continue anyway - will fall back to dev mode in assessment

@@ -146,40 +146,70 @@ class SentenceAudioView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
-        from django.http import FileResponse
+        from django.http import FileResponse, HttpResponseRedirect
+        from django.core.files.base import ContentFile
         from services.tts_service import get_tts_service
-        import os
+        import os, tempfile
         
         try:
             sentence = ReferenceSentence.objects.get(pk=pk)
         except ReferenceSentence.DoesNotExist:
             return Response({'error': 'Sentence not found'}, status=404)
         
-        # Check if audio already exists
-        audio_path = sentence.get_audio_source()
-        
-        if audio_path and os.path.exists(audio_path):
-            # Return existing audio
-            return FileResponse(
-                open(audio_path, 'rb'),
-                content_type='audio/wav',
-                as_attachment=False,
-                filename=f'sentence_{pk}.wav'
-            )
+        # Check if audio already exists in storage
+        if sentence.has_audio():
+            try:
+                # Use storage.open() — works for both local and Supabase
+                f = sentence.audio_file.open('rb')
+                return FileResponse(
+                    f,
+                    content_type='audio/wav',
+                    as_attachment=False,
+                    filename=f'sentence_{pk}.wav'
+                )
+            except Exception:
+                # If storage.open() fails (e.g. Supabase), proxy via URL
+                audio_url = sentence.get_audio_source()
+                if audio_url and audio_url.startswith('http'):
+                    import requests as http_requests
+                    resp = http_requests.get(audio_url)
+                    if resp.status_code == 200:
+                        from django.http import HttpResponse
+                        return HttpResponse(
+                            resp.content,
+                            content_type='audio/wav',
+                            headers={'Content-Disposition': f'inline; filename="sentence_{pk}.wav"'}
+                        )
         
         # Generate audio using TTS
         try:
             tts = get_tts_service()
-            audio_path = tts.generate_for_sentence(sentence)
             
-            # Update sentence with new audio path
-            from django.conf import settings
-            relative_path = os.path.relpath(audio_path, settings.MEDIA_ROOT)
-            sentence.audio_file = relative_path
-            sentence.save(update_fields=['audio_file'])
+            # Generate to temp file, then save via storage API
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                tmp_path = tmp.name
             
+            tts.generate_audio(text=sentence.text, output_path=tmp_path)
+            
+            # Save via Django storage (works for both local and S3)
+            with open(tmp_path, 'rb') as f:
+                sentence.audio_file.save(
+                    f'sentence_{pk}.wav',
+                    ContentFile(f.read()),
+                    save=True
+                )
+            
+            # Clean up temp file
+            os.unlink(tmp_path)
+            
+            # Serve the newly generated audio
+            audio_url = sentence.get_audio_source()
+            if audio_url and audio_url.startswith('http'):
+                return HttpResponseRedirect(audio_url)
+            
+            f = sentence.audio_file.open('rb')
             return FileResponse(
-                open(audio_path, 'rb'),
+                f,
                 content_type='audio/wav',
                 as_attachment=False,
                 filename=f'sentence_{pk}.wav'
@@ -210,10 +240,9 @@ class SentencePreGenerateView(APIView):
     _generating = set()
     
     def post(self, request):
-        import os
-        import threading
+        import os, tempfile
+        from django.core.files.base import ContentFile
         from services.tts_service import get_tts_service
-        from django.conf import settings
         
         sentence_ids = request.data.get('sentence_ids', [])
         
@@ -229,9 +258,8 @@ class SentencePreGenerateView(APIView):
             try:
                 sentence = ReferenceSentence.objects.get(id=sid)
                 
-                # Check if already exists
-                audio_path = sentence.get_audio_source()
-                if audio_path and os.path.exists(audio_path):
+                # Check if already exists in storage
+                if sentence.has_audio():
                     skipped.append(sid)
                     continue
                 
@@ -244,14 +272,24 @@ class SentencePreGenerateView(APIView):
                 self._generating.add(sid)
                 
                 try:
-                    # Generate TTS
+                    # Generate TTS to temp file
                     tts = get_tts_service()
-                    audio_path = tts.generate_for_sentence(sentence)
                     
-                    # Save to DB
-                    relative_path = os.path.relpath(audio_path, settings.MEDIA_ROOT)
-                    sentence.audio_file = relative_path
-                    sentence.save(update_fields=['audio_file'])
+                    with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                        tmp_path = tmp.name
+                    
+                    tts.generate_audio(text=sentence.text, output_path=tmp_path)
+                    
+                    # Save via Django storage (works for both local and S3)
+                    with open(tmp_path, 'rb') as f:
+                        sentence.audio_file.save(
+                            f'sentence_{sid}.wav',
+                            ContentFile(f.read()),
+                            save=True
+                        )
+                    
+                    # Clean up temp file
+                    os.unlink(tmp_path)
                     
                     generated.append(sid)
                 finally:

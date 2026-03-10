@@ -136,13 +136,26 @@ class ReferenceSentence(models.Model):
         return f"{self.text[:50]}..." if len(self.text) > 50 else self.text
     
     def get_audio_source(self):
-        """Return the audio URL or absolute file path."""
+        """Return the audio URL (works with both local and S3 storage)."""
         if self.audio_url:
             return self.audio_url
         elif self.audio_file:
-            # Return absolute path for local files, not URL
-            return self.audio_file.path
+            try:
+                return self.audio_file.url
+            except Exception:
+                return None
         return None
+
+    def has_audio(self):
+        """Check if audio file exists in storage."""
+        if self.audio_url:
+            return True
+        if self.audio_file:
+            try:
+                return self.audio_file.storage.exists(self.audio_file.name)
+            except Exception:
+                return False
+        return False
 
 
 class SentencePhoneme(models.Model):

@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'storages',
     
     # Local apps
     'apps.accounts',
@@ -196,12 +197,22 @@ SESSION_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = not DEBUG
 
-# Supabase Storage Configuration
-USE_SUPABASE_STORAGE = USE_SUPABASE  # Alias for backward compatibility
+# Supabase Configuration
 SUPABASE_URL = os.getenv('SUPABASE_URL', '')
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY', '')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY', '')
 SUPABASE_STORAGE_BUCKET = os.getenv('SUPABASE_STORAGE_BUCKET', 'pronunex-dB')
+
+# Supabase S3-compatible Storage (for FileField uploads)
+if USE_SUPABASE:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'config.storage_backends.SupabaseStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
+    }
 
 # Frontend Configuration
 FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:5173')

@@ -334,55 +334,127 @@ class AssessmentService:
         return batch_audio_to_embeddings(audio_slices)
     
     def _get_reference_embeddings(self, sentence):
-        """Fetch precomputed reference embeddings from database."""
-        import pickle
+        """Fetch precomputed reference embeddings from database.
+        
+        Uses safe numpy serialization (no pickle) and storage-agnostic
+        audio access (works with both local and Supabase storage).
+        """
         import os
+        import tempfile
         import numpy as np
         
-        # Try loading cached embeddings
+        # Try loading cached embeddings (safe numpy format)
         if sentence.reference_embeddings:
             try:
-                embeddings = pickle.loads(sentence.reference_embeddings)
-                # Validate embeddings are usable
-                if embeddings and len(embeddings) > 0:
-                    # Ensure they're numpy arrays
-                    if hasattr(embeddings[0], 'numpy'):
-                        embeddings = [e.numpy() if hasattr(e, 'numpy') else e for e in embeddings]
+                embeddings = self._deserialize_embeddings(sentence.reference_embeddings)
+                if embeddings is not None and len(embeddings) > 0:
                     return embeddings
             except Exception as e:
                 logger.warning(f"Failed to load cached embeddings for sentence {sentence.id}: {e}")
-                # Clear invalid cache
                 sentence.reference_embeddings = None
                 sentence.save(update_fields=['reference_embeddings'])
         
-        # Need to compute embeddings from reference audio
+        # Compute embeddings from reference audio
         logger.info(f"Computing reference embeddings for sentence {sentence.id}")
         
-        audio_source = sentence.get_audio_source() if hasattr(sentence, 'get_audio_source') else None
-        if not audio_source or not os.path.exists(audio_source):
-            # No audio source available - use fallback approach
+        if not sentence.has_audio():
             logger.warning(f"No audio source for sentence {sentence.id}, using synthetic embeddings")
-            # Return a single dummy embedding that will force sentence-level comparison
-            return [np.zeros(768)]  # Standard embedding dimension
+            return [np.zeros(768)]
         
-        # Compute embeddings from full audio
+        # Download audio from storage (Supabase or local) to a temp file
+        temp_path = None
         try:
+            f = sentence.audio_file.open('rb')
+            audio_data = f.read()
+            f.close()
+            
+            # Write to temp file for NLP processing
+            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp:
+                tmp.write(audio_data)
+                temp_path = tmp.name
+            
             from nlp_core.vectorizer import compute_sentence_embedding
-            embedding = compute_sentence_embedding(audio_source)
+            embedding = compute_sentence_embedding(temp_path)
             
             # Ensure it's a numpy array
             if hasattr(embedding, 'numpy'):
                 embedding = embedding.numpy()
             
-            # Cache in database for future use (as numpy, not torch)
-            sentence.reference_embeddings = pickle.dumps([embedding])
+            # Cache in database using safe numpy serialization
+            sentence.reference_embeddings = self._serialize_embeddings([embedding])
             sentence.save(update_fields=['reference_embeddings'])
             
             return [embedding]
         except Exception as e:
             logger.error(f"Failed to compute reference embeddings: {str(e)}")
-            # Return dummy embeddings to allow scoring to proceed
             return [np.zeros(768)]
+        finally:
+            if temp_path and os.path.exists(temp_path):
+                os.unlink(temp_path)
+    
+    @staticmethod
+    def _serialize_embeddings(embeddings):
+        """Serialize embeddings using safe numpy format (no pickle)."""
+        import numpy as np
+        import json
+        
+        # Store as JSON metadata + raw bytes
+        shapes = [e.shape for e in embeddings]
+        dtypes = [str(e.dtype) for e in embeddings]
+        # Concatenate all embeddings into a single flat array
+        flat = np.concatenate([e.flatten() for e in embeddings]).astype(np.float32)
+        
+        # Header: JSON with shapes + dtypes, then raw float32 bytes
+        header = json.dumps({'shapes': [list(s) for s in shapes], 'dtypes': dtypes}).encode('utf-8')
+        header_len = len(header).to_bytes(4, 'little')
+        return header_len + header + flat.tobytes()
+    
+    @staticmethod
+    def _deserialize_embeddings(data):
+        """Deserialize embeddings from safe numpy format.
+        
+        Also handles legacy pickle format for backward compatibility
+        (migrates to new format on next save).
+        """
+        import numpy as np
+        import json
+        
+        if not data or len(data) < 4:
+            return None
+        
+        # Try new safe format first: 4-byte header length + JSON header + raw bytes
+        try:
+            header_len = int.from_bytes(data[:4], 'little')
+            if 4 < header_len < 10000:  # Sanity check
+                header = json.loads(data[4:4 + header_len].decode('utf-8'))
+                raw = data[4 + header_len:]
+                flat = np.frombuffer(raw, dtype=np.float32)
+                
+                embeddings = []
+                offset = 0
+                for shape in header['shapes']:
+                    size = 1
+                    for dim in shape:
+                        size *= dim
+                    embeddings.append(flat[offset:offset + size].reshape(shape))
+                    offset += size
+                return embeddings
+        except (json.JSONDecodeError, UnicodeDecodeError, KeyError, ValueError):
+            pass
+        
+        # Fallback: try legacy pickle format (read-only, will be re-saved as numpy)
+        try:
+            import pickle
+            embeddings = pickle.loads(data)
+            if embeddings and len(embeddings) > 0:
+                if hasattr(embeddings[0], 'numpy'):
+                    embeddings = [e.numpy() if hasattr(e, 'numpy') else e for e in embeddings]
+                logger.info("Migrated legacy pickle embeddings to safe format")
+                return embeddings
+        except Exception:
+            pass
+        
+        return None
     
     def _calculate_scores(self, user_embeddings, reference_embeddings, phonemes, timestamps):
         """Calculate similarity scores between user and reference embeddings."""
