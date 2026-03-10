@@ -1,0 +1,100 @@
+/* ============================================
+   PIPELINE LOADER — Compact Single-line
+   ============================================ */
+
+.pipeline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    animation: pipeline-in 0.35s ease-out;
+}
+
+@keyframes pipeline-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Spinner ---- */
+.pipeline__indicator {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-full);
+    background: var(--color-primary-50);
+    border: 2px solid var(--color-primary-300);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+}
+
+/* Pulse ring */
+.pipeline__indicator::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: var(--radius-full);
+    border: 2px solid var(--color-primary-200);
+    animation: pip-pulse 2s ease-in-out infinite;
+}
+
+@keyframes pip-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50%      { transform: scale(1.15); opacity: 0.1; }
+}
+
+.pipeline__spinner-svg {
+    color: var(--color-primary-500);
+    animation: pip-spin 0.7s linear infinite;
+}
+
+@keyframes pip-spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* ---- Content ---- */
+.pipeline__content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+/* Label row */
+.pipeline__label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.pipeline__step-num {
+    font-size: 11px;
+    font-family: var(--font-family-mono);
+    color: var(--color-primary-500);
+    font-weight: var(--font-semibold);
+    background: var(--color-primary-50);
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.pipeline__stage-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+/* Microcopy sub-text */
+.pipeline__subtext {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    animation: sub-swap 0.3s ease-out;
+}
+
+@keyframes sub-swap {
+    from { opacity: 0; transform: translateY(-3px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

@@ -38,6 +38,7 @@ import { ComparisonVisualizer } from '../components/practice/insights/Comparison
 import { AIRecommendations } from '../components/practice/insights/AIRecommendations';
 import { MistakePanel, ContentMismatchError, UnscorableError } from '../components/practice/MistakePanel';
 import { LetterHighlight } from '../components/practice/LetterHighlight';
+import { PipelineLoader } from '../components/practice/PipelineLoader';
 import './Practice.css';
 
 // Waveform Visualizer Component
@@ -1358,11 +1359,10 @@ export function Practice() {
                         </div>
                     )}
 
-                    {/* Analyzing State */}
+                    {/* Analyzing State — Pipeline Loader */}
                     {isAssessing && (
                         <div className="practice__analyzing">
-                            <Spinner size="lg" />
-                            <span className="practice__analyzing-text">Analyzing your pronunciation...</span>
+                            <PipelineLoader isActive={isAssessing} />
                         </div>
                     )}
 
