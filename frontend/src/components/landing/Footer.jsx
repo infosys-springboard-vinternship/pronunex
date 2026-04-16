@@ -28,7 +28,7 @@ export default function Footer() {
                         <span className="footer-logo-text-enterprise">Pronunex</span>
                     </div>
                     <p className="footer-tagline-enterprise">
-                        AI-Powered Speech Therapy for English Pronunciation Mastery
+                        AI-Powered English Pronunciation Improvement Platform
                     </p>
                 </div>
 

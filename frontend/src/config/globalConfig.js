@@ -80,7 +80,7 @@ export const SITE_DATA = {
             {
                 id: 'introduction',
                 title: 'Introduction',
-                content: `Pronunex is an advanced AI-powered speech therapy platform designed to help users master spoken English. By leveraging cutting-edge Natural Language Processing (NLP) and audio analysis, it provides real-time feedback on pronunciation, fluency, and phoneme accuracy.`
+                content: `Pronunex is an advanced AI-powered English pronunciation improvement platform designed to help users master spoken English. By leveraging cutting-edge Natural Language Processing (NLP) and audio analysis, it provides real-time feedback on pronunciation, fluency, and phoneme accuracy.`
             },
             {
                 id: 'getting-started',

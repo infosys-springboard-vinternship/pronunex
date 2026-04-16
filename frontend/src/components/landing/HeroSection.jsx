@@ -135,7 +135,7 @@ export default function HeroSection() {
                 >
                     <motion.div className="hero-badge-enterprise" variants={itemVariants}>
                         <Zap className="hero-badge-icon-enterprise" aria-hidden="true" />
-                        <span>AI-Powered Speech Therapy</span>
+                        <span>English Pronunciation Improvement Platform</span>
                     </motion.div>
 
                     <motion.h1 className="hero-headline-enterprise" variants={itemVariants}>
@@ -149,7 +149,7 @@ export default function HeroSection() {
 
                     <motion.p className="hero-subheadline-enterprise" variants={itemVariants}>
                         From phoneme-level analysis to adaptive exercises, get a personalized
-                        speech therapy experience that evolves with you. Our AI identifies
+                        pronunciation improvement experience that evolves with you. Our AI identifies
                         exactly where you struggle and creates a custom learning path.
                     </motion.p>
 
