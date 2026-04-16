@@ -29,7 +29,7 @@ import Contact from './pages/Contact'; // Added this back
 import LandingNavbar from './components/landing/Navbar';
 import AuthNavbar from './components/Navbar';
 import Features from './pages/Features';
-import HowItWorks from './pages/HowItWorks';
+
 
 // Lazy loaded pages
 const Practice = lazy(() => import('./pages/Practice'));
@@ -131,14 +131,7 @@ function App() {
                         </PublicLayout>
                     }
                 />
-                <Route
-                    path="/how-it-works"
-                    element={
-                        <PublicLayout>
-                            <HowItWorks />
-                        </PublicLayout>
-                    }
-                />
+
                 <Route
                     path="/pricing"
                     element={

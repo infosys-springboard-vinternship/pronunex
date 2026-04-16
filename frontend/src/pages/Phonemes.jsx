@@ -21,6 +21,91 @@ const PHONEME_CATEGORIES = [
 
 const ITEMS_PER_PAGE = 20;
 
+// Beginner-friendly definitions for phoneme category types
+const CATEGORY_INFO = {
+    vowel: {
+        meaning: 'A sound made with your mouth open and air flowing freely, like the "a" in "cat" or "ee" in "see".',
+        examples: [
+            { word: 'cat', pronunciation: '/kæt/' },
+            { word: 'see', pronunciation: '/siː/' },
+            { word: 'put', pronunciation: '/pʊt/' },
+            { word: 'bird', pronunciation: '/bɜːrd/' },
+        ],
+    },
+    diphthong: {
+        meaning: 'Two vowel sounds pronounced together to make one sound, for example the /aɪ/ sound in "fine" or /aʊ/ in "how".',
+        examples: [
+            { word: 'fine', pronunciation: '/faɪn/' },
+            { word: 'house', pronunciation: '/haʊs/' },
+            { word: 'coin', pronunciation: '/kɔɪn/' },
+            { word: 'face', pronunciation: '/feɪs/' },
+        ],
+    },
+    fricative: {
+        meaning: 'A sound made by pushing air through a tight gap in your mouth, creating a hissing or buzzing noise, like "f" in "fish" or "s" in "sun".',
+        examples: [
+            { word: 'fish', pronunciation: '/fɪʃ/' },
+            { word: 'think', pronunciation: '/θɪŋk/' },
+            { word: 'zoo', pronunciation: '/zuː/' },
+            { word: 'she', pronunciation: '/ʃiː/' },
+        ],
+    },
+    plosive: {
+        meaning: 'A sound made by briefly blocking the air completely and then releasing it in a quick burst, like "p" in "pop" or "b" in "bat".',
+        examples: [
+            { word: 'pop', pronunciation: '/pɒp/' },
+            { word: 'bat', pronunciation: '/bæt/' },
+            { word: 'dog', pronunciation: '/dɒɡ/' },
+            { word: 'key', pronunciation: '/kiː/' },
+        ],
+    },
+    nasal: {
+        meaning: 'A sound made by letting air flow through your nose instead of your mouth, like "m" in "man" or "n" in "no".',
+        examples: [
+            { word: 'man', pronunciation: '/mæn/' },
+            { word: 'no', pronunciation: '/nəʊ/' },
+            { word: 'sing', pronunciation: '/sɪŋ/' },
+            { word: 'name', pronunciation: '/neɪm/' },
+        ],
+    },
+    liquid: {
+        meaning: 'A smooth, flowing sound where your tongue partly blocks the air but lets it move around, like "l" in "lip" or "r" in "run".',
+        examples: [
+            { word: 'lip', pronunciation: '/lɪp/' },
+            { word: 'run', pronunciation: '/rʌn/' },
+            { word: 'yellow', pronunciation: '/ˈjeləʊ/' },
+            { word: 'roll', pronunciation: '/rəʊl/' },
+        ],
+    },
+    glide: {
+        meaning: 'A quick, smooth sound that connects vowels together, like "w" in "wet" or "y" in "yes". Also called semivowels.',
+        examples: [
+            { word: 'wet', pronunciation: '/wɛt/' },
+            { word: 'yes', pronunciation: '/jɛs/' },
+            { word: 'away', pronunciation: '/əˈweɪ/' },
+            { word: 'you', pronunciation: '/juː/' },
+        ],
+    },
+    affricate: {
+        meaning: 'A sound that starts by blocking the air (like a plosive) and then releases it with friction (like a fricative), such as "ch" in "church" or "j" in "judge".',
+        examples: [
+            { word: 'church', pronunciation: '/tʃɜːtʃ/' },
+            { word: 'judge', pronunciation: '/dʒʌdʒ/' },
+            { word: 'watch', pronunciation: '/wɒtʃ/' },
+            { word: 'jam', pronunciation: '/dʒæm/' },
+        ],
+    },
+    consonant: {
+        meaning: 'A sound made by partly or fully blocking the air in your mouth, like "s" in "sun" or "t" in "top".',
+        examples: [
+            { word: 'sun', pronunciation: '/sʌn/' },
+            { word: 'top', pronunciation: '/tɒp/' },
+            { word: 'ball', pronunciation: '/bɔːl/' },
+            { word: 'go', pronunciation: '/ɡəʊ/' },
+        ],
+    },
+};
+
 export function Phonemes() {
     const { data: phonemes, isLoading, error, refetch } = useApi(ENDPOINTS.PHONEMES.LIST);
 
@@ -245,6 +330,18 @@ export function Phonemes() {
                             </div>
                         </div>
 
+                        {/* Category meaning */}
+                        {(() => {
+                            const catKey = (selectedPhoneme.category || selectedPhoneme.type || '').toLowerCase();
+                            const catInfo = CATEGORY_INFO[catKey];
+                            return catInfo ? (
+                                <div className="phoneme-detail__section">
+                                    <h3>What is a {catKey.charAt(0).toUpperCase() + catKey.slice(1)}?</h3>
+                                    <p className="phoneme-detail__category-meaning">{catInfo.meaning}</p>
+                                </div>
+                            ) : null;
+                        })()}
+
                         {selectedPhoneme.example_word && (
                             <div className="phoneme-detail__section">
                                 <h3>Example Word</h3>
@@ -253,6 +350,25 @@ export function Phonemes() {
                                 </p>
                             </div>
                         )}
+
+                        {/* Additional example words with pronunciation */}
+                        {(() => {
+                            const catKey = (selectedPhoneme.category || selectedPhoneme.type || '').toLowerCase();
+                            const catInfo = CATEGORY_INFO[catKey];
+                            return catInfo?.examples?.length > 0 ? (
+                                <div className="phoneme-detail__section">
+                                    <h3>More Examples</h3>
+                                    <div className="phoneme-detail__examples-grid">
+                                        {catInfo.examples.map((ex, idx) => (
+                                            <div key={idx} className="phoneme-detail__example-item">
+                                                <span className="phoneme-detail__example-word">{ex.word}</span>
+                                                <span className="phoneme-detail__example-ipa">{ex.pronunciation}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null;
+                        })()}
 
                         {(selectedPhoneme.articulation_tips || selectedPhoneme.articulation_tip) && (
                             <div className="phoneme-detail__section">

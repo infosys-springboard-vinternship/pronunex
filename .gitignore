@@ -46,7 +46,6 @@ backend/media/
 # IDE
 .idea/
 .vscode/
-.agent
 *.swp
 *.swo
 *~

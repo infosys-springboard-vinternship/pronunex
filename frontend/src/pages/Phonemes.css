@@ -285,6 +285,54 @@
     font-size: var(--text-lg);
 }
 
+/* Category meaning */
+.phoneme-detail__category-meaning {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    padding: var(--space-3);
+    background-color: var(--surface-secondary, rgba(0, 0, 0, 0.02));
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color-primary-400);
+}
+
+/* Examples grid */
+.phoneme-detail__examples-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.phoneme-detail__example-item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    background-color: var(--surface-secondary, rgba(0, 0, 0, 0.02));
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-primary);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.phoneme-detail__example-item:hover {
+    border-color: var(--color-primary-300);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.phoneme-detail__example-word {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--text-primary);
+    text-transform: capitalize;
+}
+
+.phoneme-detail__example-ipa {
+    font-size: var(--text-sm);
+    color: var(--color-primary-600);
+    font-family: var(--font-family-mono);
+}
+
 /* Pagination */
 .phonemes__pagination {
     display: flex;

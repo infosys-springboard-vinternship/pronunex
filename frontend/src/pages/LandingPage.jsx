@@ -13,7 +13,7 @@ import SectionSkeleton from '../components/landing/SectionSkeleton';
 import { ScrollProgress } from '../components/ui/ScrollProgress';
 
 // Lazy load - Below the fold (deferred)
-const HowItWorksSection = lazy(() => import('../components/landing/HowItWorksSection'));
+
 const FeatureGridSection = lazy(() => import('../components/landing/FeatureGridSection'));
 const DataInActionSection = lazy(() => import('../components/landing/DataInActionSection'));
 const TechnicalTrustSection = lazy(() => import('../components/landing/TechnicalTrustSection'));
@@ -74,9 +74,7 @@ export default function LandingPage() {
                 {/* Below the fold - Lazy loaded with skeletons */}
                 {shouldLoadBelow && (
                     <>
-                        <Suspense fallback={<SectionSkeleton type="steps" height="500px" />}>
-                            <HowItWorksSection />
-                        </Suspense>
+
 
                         <Suspense fallback={<SectionSkeleton type="cards" height="500px" />}>
                             <FeatureGridSection />

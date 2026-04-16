@@ -63,6 +63,13 @@ export const ENDPOINTS = {
         WEAK_PHONEMES: `${BASE_PATH}/analytics/weak-phonemes/`,
         HISTORY: `${BASE_PATH}/analytics/history/`,
     },
+
+    // Admin (requires is_staff)
+    ADMIN: {
+        STATS: `${BASE_PATH}/admin/stats/`,
+        USERS: `${BASE_PATH}/admin/users/`,
+        USER_DETAIL: (id) => `${BASE_PATH}/admin/users/${id}/`,
+    },
 };
 
 export default ENDPOINTS;

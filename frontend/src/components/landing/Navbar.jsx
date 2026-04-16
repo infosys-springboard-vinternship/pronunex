@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ArrowRight, Home, DollarSign, FileText, Sparkles, Cog, Mic, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ArrowRight, Home, DollarSign, FileText, Sparkles, Mic, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -17,7 +17,7 @@ export default function Navbar() {
         { name: 'Pricing', href: '/pricing', icon: DollarSign },
         { name: 'Docs', href: '/docs', icon: FileText },
         { name: 'Features', href: '/features', icon: Sparkles },
-        { name: 'How It Works', href: '/how-it-works', icon: Cog },
+
         { name: 'Practice', href: '/practice', icon: Mic },
     ];
 

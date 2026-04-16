@@ -14,6 +14,7 @@ urlpatterns = [
     
     # API v1 endpoints
     path('api/v1/auth/', include('apps.accounts.urls')),
+    path('api/v1/admin/', include('apps.accounts.admin_urls')),
     path('api/v1/library/', include('apps.library.urls')),
     path('api/v1/practice/', include('apps.practice.urls')),
     path('api/v1/', include('apps.analytics.urls')),

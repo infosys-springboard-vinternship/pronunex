@@ -1181,9 +1181,6 @@ export function Practice() {
                     <h1 className="practice__title">
                         {isWeakSetMode ? 'Weak Phoneme Practice' : 'Practice Session'}
                     </h1>
-                    <span className="practice__progress-text">
-                        {currentIndex + 1} of {sentences.length}
-                    </span>
                     {isWeakSetMode ? (
                         <button
                             type="button"
