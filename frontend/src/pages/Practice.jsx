@@ -254,6 +254,8 @@ export function Practice() {
     const timerRef = useRef(null);
     const audioRef = useRef(null);
     const referenceAudioRef = useRef(null);
+    const autoSubmitRef = useRef(false);    // true = auto-submit when onstop fires
+    const autoStopTimeoutRef = useRef(null); // tracks the 30s auto-stop timeout
 
     const [isLoadingReference, setIsLoadingReference] = useState(false);
     const [isPlayingReference, setIsPlayingReference] = useState(false);
@@ -502,6 +504,7 @@ export function Practice() {
             const mediaRecorder = new MediaRecorder(stream);
             mediaRecorderRef.current = mediaRecorder;
             audioChunksRef.current = [];
+            autoSubmitRef.current = false;
 
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
@@ -516,45 +519,72 @@ export function Practice() {
                 setHasRecording(true);
                 stream.getTracks().forEach(track => track.stop());
                 setAudioStream(null);
+                // Auto-submit if flagged (user stopped OR 30s limit reached)
+                if (autoSubmitRef.current) {
+                    autoSubmitRef.current = false;
+                    // Small delay lets React flush state before submit renders UI
+                    setTimeout(() => handleSubmit(blob), 150);
+                }
             };
 
             mediaRecorder.start();
             setIsRecording(true);
             setDuration(0);
 
+            // Interval: update visible timer
             timerRef.current = setInterval(() => {
-                setDuration(prev => {
-                    if (prev >= maxDuration - 1) {
-                        stopRecording();
-                        return maxDuration;
-                    }
-                    return prev + 1;
-                });
+                setDuration(prev => prev + 1);
             }, 1000);
+
+            // Auto-stop after maxDuration seconds (avoids stale-closure bug)
+            autoStopTimeoutRef.current = setTimeout(() => {
+                toast.info('Maximum recording time reached. Submitting...');
+                stopAndSubmit();
+            }, maxDuration * 1000);
+
         } catch (err) {
             toast.error('Could not access microphone. Please check permissions.');
         }
     };
 
-    // Stop recording
-    const stopRecording = () => {
+    // Internal helper: clear all recording timers
+    const _clearTimers = () => {
         if (timerRef.current) {
             clearInterval(timerRef.current);
             timerRef.current = null;
         }
-        if (mediaRecorderRef.current && isRecording) {
+        if (autoStopTimeoutRef.current) {
+            clearTimeout(autoStopTimeoutRef.current);
+            autoStopTimeoutRef.current = null;
+        }
+    };
+
+    // Stop recording — sets auto-submit flag so onstop triggers handleSubmit
+    const stopRecording = () => {
+        _clearTimers();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            autoSubmitRef.current = true;
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+            setIsPlaying(false);
+        }
+    };
+
+    // Stop + submit in one action (used by auto-stop timeout)
+    const stopAndSubmit = () => {
+        _clearTimers();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            autoSubmitRef.current = true;
             mediaRecorderRef.current.stop();
             setIsRecording(false);
         }
     };
 
-    // Cancel/retry recording
+    // Cancel/retry — does NOT auto-submit
     const cancelRecording = () => {
-        if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-        }
-        if (mediaRecorderRef.current && isRecording) {
+        autoSubmitRef.current = false;
+        _clearTimers();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
         }
@@ -567,14 +597,9 @@ export function Practice() {
         setDuration(0);
     };
 
-    // Cleanup timer on unmount
+    // Cleanup timers on unmount
     useEffect(() => {
-        return () => {
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
-        };
+        return () => _clearTimers();
     }, []);
 
     // Toggle playback
@@ -588,16 +613,17 @@ export function Practice() {
         setIsPlaying(!isPlaying);
     };
 
-    // Submit recording
-    const handleSubmit = async () => {
-        if (!currentSentence || !audioBlob) return;
+    // Submit recording — accepts optional blob override for auto-submit path
+    const handleSubmit = async (blobOverride) => {
+        const submitBlob = blobOverride instanceof Blob ? blobOverride : audioBlob;
+        if (!currentSentence || !submitBlob) return;
 
         // Clear previous errors
         setAssessmentError(null);
 
         try {
             const result = await mutate(async () => {
-                return api.uploadAudio(currentSentence.id, audioBlob);
+                return api.uploadAudio(currentSentence.id, submitBlob);
             });
 
             const data = result.data;
@@ -1296,9 +1322,6 @@ export function Practice() {
                                 isRecording={isRecording}
                             />
 
-                            {/* Playback audio element */}
-                            {audioUrl && <audio ref={audioRef} src={audioUrl} />}
-
                             {/* Action Buttons */}
                             <div className="practice__action-buttons">
                                 {!isRecording && !hasRecording && (
@@ -1322,36 +1345,6 @@ export function Practice() {
                                         <span>Stop</span>
                                     </button>
                                 )}
-
-                                {hasRecording && !isRecording && (
-                                    <>
-                                        <button
-                                            type="button"
-                                            className="practice__action-btn practice__action-btn--retry"
-                                            onClick={cancelRecording}
-                                        >
-                                            <RotateCcw size={20} />
-                                            <span>Retry</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="practice__action-btn"
-                                            onClick={togglePlayback}
-                                        >
-                                            {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-                                            <span>{isPlaying ? 'Pause' : 'Play'}</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            className="practice__action-btn practice__action-btn--submit"
-                                            onClick={handleSubmit}
-                                            disabled={isAssessing}
-                                        >
-                                            <Send size={20} />
-                                            <span>Submit</span>
-                                        </button>
-                                    </>
-                                )}
                             </div>
                         </div>
                     )}
@@ -1360,6 +1353,20 @@ export function Practice() {
                     {isAssessing && (
                         <div className="practice__analyzing">
                             <PipelineLoader isActive={isAssessing} />
+                            {/* Play recording while analyzing */}
+                            {audioUrl && (
+                                <div className="practice__playback-mini">
+                                    <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
+                                    <button
+                                        type="button"
+                                        className="practice__action-btn practice__action-btn--playback"
+                                        onClick={togglePlayback}
+                                    >
+                                        {isPlaying ? <Pause size={18} /> : <Play size={18} />}
+                                        <span>{isPlaying ? 'Pause' : 'Listen to your recording'}</span>
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1410,6 +1417,21 @@ export function Practice() {
                                         </span>
                                     )}
                                 </div>
+                                {/* Play your recording */}
+                                {audioUrl && (
+                                    <div className="practice__playback-mini practice__playback-mini--inline">
+                                        <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} />
+                                        <button
+                                            type="button"
+                                            className="practice__action-btn practice__action-btn--playback"
+                                            onClick={togglePlayback}
+                                            title="Listen to your recording"
+                                        >
+                                            {isPlaying ? <Pause size={16} /> : <Play size={16} />}
+                                            <span>{isPlaying ? 'Pause' : 'Your Recording'}</span>
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
 

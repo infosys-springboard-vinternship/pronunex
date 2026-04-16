@@ -784,6 +784,51 @@
     color: var(--text-secondary);
 }
 
+/* Playback Mini - Listen to your recording while assessing / in results */
+.practice__playback-mini {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-2);
+}
+
+.practice__playback-mini--inline {
+    margin-left: auto;
+    margin-top: 0;
+}
+
+.practice__action-btn--playback {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-primary-600);
+    background: var(--color-primary-50);
+    border: 1px solid var(--color-primary-200);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-width: auto;
+}
+
+.practice__action-btn--playback:hover {
+    background: var(--color-primary-100);
+    border-color: var(--color-primary-300);
+    transform: scale(1.02);
+}
+
+[data-theme='dark'] .practice__action-btn--playback {
+    color: var(--color-primary-300);
+    background: rgba(20, 184, 166, 0.1);
+    border-color: rgba(20, 184, 166, 0.25);
+}
+
+[data-theme='dark'] .practice__action-btn--playback:hover {
+    background: rgba(20, 184, 166, 0.2);
+    border-color: rgba(20, 184, 166, 0.4);
+}
+
 /* ============================================
    Navigation - Fixed Bottom
    ============================================ */
