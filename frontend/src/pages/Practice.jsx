@@ -1525,7 +1525,7 @@ export function Practice() {
                     </div>
 
                     {/* Advanced Insights - Collapsible Panel */}
-                    <InsightsPanel isOpen={true} title="Advanced Insights & AI Feedback">
+                    <InsightsPanel isOpen={true} title="AI Coach">
                         <div className="insights-grid">
                             <AIRecommendations
                                 assessment={assessment}

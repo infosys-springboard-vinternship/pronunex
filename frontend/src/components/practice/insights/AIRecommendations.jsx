@@ -118,7 +118,7 @@ export function AIRecommendations({ assessment, currentSentence }) {
         <div className="ai-recommendations">
             <header className="ai-recommendations__header">
                 <Bot size={18} className="text-primary" />
-                <h4 className="ai-recommendations__title">AI Coach</h4>
+                <h4 className="ai-recommendations__title">Summary</h4>
             </header>
 
             <p className="ai-recommendations__text">
