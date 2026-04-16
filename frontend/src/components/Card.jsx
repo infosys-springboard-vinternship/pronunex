@@ -58,11 +58,14 @@ export function CardFooter({ children, className = '' }) {
 /**
  * Stat Card for dashboards
  */
-export function StatCard({ label, value, icon: Icon, trend, className = '' }) {
+export function StatCard({ label, value, icon: Icon, trend, accent, className = '' }) {
     return (
-        <Card className={`stat-card ${className}`}>
+        <Card className={`stat-card ${accent ? `stat-card--${accent}` : ''} ${className}`}>
             <div className="stat-card__content">
-                <span className="stat-card__label">{label}</span>
+                <span className="stat-card__label">
+                    {accent === 'live' && <span className="stat-card__pulse" />}
+                    {label}
+                </span>
                 <span className="stat-card__value">{value}</span>
                 {trend && (
                     <span className={`stat-card__trend stat-card__trend--${trend.direction}`}>

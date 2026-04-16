@@ -26,7 +26,7 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             'proficiency_level', 'native_language',
             'is_active', 'is_staff', 'is_email_verified',
             'daily_goal_target', 'avatar_id',
-            'last_login', 'created_at',
+            'last_login', 'last_active', 'created_at',
             'sessions_count', 'avg_score',
         ]
         read_only_fields = fields
@@ -46,7 +46,7 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
             'proficiency_level', 'native_language',
             'is_active', 'is_staff', 'is_email_verified',
             'daily_goal_target', 'avatar_id',
-            'last_login', 'date_joined', 'created_at', 'updated_at',
+            'last_login', 'last_active', 'date_joined', 'created_at', 'updated_at',
             'sessions_count', 'attempts_count', 'avg_score',
         ]
         read_only_fields = fields

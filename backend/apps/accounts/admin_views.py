@@ -53,10 +53,14 @@ class AdminStatsView(APIView):
         today = now.date()
         week_ago = today - timedelta(days=7)
         two_weeks_ago = today - timedelta(days=14)
+        online_threshold = now - timedelta(minutes=5)
         
         # Core counts
         total_users = User.objects.count()
-        active_today = User.objects.filter(last_login__date=today).count()
+        active_today = User.objects.filter(
+            Q(last_active__date=today) | Q(last_login__date=today)
+        ).distinct().count()
+        online_now = User.objects.filter(last_active__gte=online_threshold).count()
         new_users_week = User.objects.filter(created_at__date__gte=week_ago).count()
         total_sessions = UserSession.objects.count()
         total_attempts = Attempt.objects.count()
@@ -81,10 +85,12 @@ class AdminStatsView(APIView):
             .order_by('date')
         )
         
-        # Active users trend (last 14 days)
+        # Active users trend (last 14 days) — uses last_active
         active_trend = list(
-            User.objects.filter(last_login__date__gte=two_weeks_ago)
-            .annotate(date=TruncDate('last_login'))
+            User.objects.filter(
+                Q(last_active__date__gte=two_weeks_ago) | Q(last_login__date__gte=two_weeks_ago)
+            )
+            .annotate(date=TruncDate('last_active'))
             .values('date')
             .annotate(count=Count('id', distinct=True))
             .order_by('date')
@@ -99,6 +105,7 @@ class AdminStatsView(APIView):
         return Response({
             'total_users': total_users,
             'active_today': active_today,
+            'online_now': online_now,
             'new_users_this_week': new_users_week,
             'total_sessions': total_sessions,
             'total_attempts': total_attempts,

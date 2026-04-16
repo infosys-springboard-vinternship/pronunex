@@ -41,6 +41,11 @@ class User(AbstractUser):
         default='avatar-1',
         help_text='ID of predefined avatar (avatar-1 to avatar-11)'
     )
+    last_active = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Last time the user made an authenticated request'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

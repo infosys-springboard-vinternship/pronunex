@@ -138,3 +138,42 @@
     background-color: var(--color-primary-50);
     border-radius: var(--radius-lg);
 }
+
+/* Live accent variant (Online Now) */
+.stat-card--live {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.stat-card--live .stat-card__icon {
+    color: #10b981;
+    background-color: rgba(16, 185, 129, 0.1);
+}
+
+.stat-card--live .stat-card__label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.stat-card__pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #10b981;
+    border-radius: 50%;
+    animation: pulse-live 2s ease-in-out infinite;
+}
+
+@keyframes pulse-live {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+
+[data-theme='dark'] .stat-card--live {
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme='dark'] .stat-card--live .stat-card__icon {
+    color: #34d399;
+    background-color: rgba(16, 185, 129, 0.12);
+}

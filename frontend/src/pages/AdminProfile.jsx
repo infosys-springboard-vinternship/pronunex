@@ -9,7 +9,7 @@ import {
     Shield, Users, Activity, Settings, ExternalLink,
     TrendingUp, Search, ChevronLeft, ChevronRight,
     BarChart2, UserCheck, UserX, Trash2, AlertTriangle,
-    X, RefreshCw, ArrowUpDown
+    X, RefreshCw, ArrowUpDown, Radio
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -47,8 +47,9 @@ export function AdminProfile() {
     const [filterStaff, setFilterStaff] = useState(null);
     const [ordering, setOrdering] = useState('-created_at');
 
-    // UI state
-    const [deleteConfirm, setDeleteConfirm] = useState(null);
+    // Confirmation modal state
+    const [confirmModal, setConfirmModal] = useState(null);
+    const [confirmInput, setConfirmInput] = useState('');
     const [actionLoading, setActionLoading] = useState(null);
     const [error, setError] = useState(null);
 
@@ -58,16 +59,16 @@ export function AdminProfile() {
     // Redirect non-admin users
     useEffect(() => {
         if (user && !user.is_staff) {
-            navigate('/profile');
+            navigate('/dashboard');
         }
     }, [user, navigate]);
 
-    // Fetch system stats
+    // Fetch stats
     const fetchStats = useCallback(async () => {
         setStatsLoading(true);
         try {
-            const response = await api.get(ENDPOINTS.ADMIN.STATS);
-            setStats(response.data);
+            const res = await api.get(ENDPOINTS.ADMIN.STATS);
+            setStats(res.data || res);
         } catch (err) {
             console.error('Failed to fetch admin stats:', err);
         } finally {
@@ -75,18 +76,23 @@ export function AdminProfile() {
         }
     }, []);
 
-    // Fetch users with filters
+    // Fetch users
     const fetchUsers = useCallback(async () => {
         setUsersLoading(true);
         try {
-            let url = `${ENDPOINTS.ADMIN.USERS}?page=${page}&page_size=${PAGE_SIZE}&ordering=${ordering}`;
-            if (debouncedSearch) url += `&search=${encodeURIComponent(debouncedSearch)}`;
-            if (filterActive !== null) url += `&is_active=${filterActive}`;
-            if (filterStaff !== null) url += `&is_staff=${filterStaff}`;
+            const params = new URLSearchParams({
+                page,
+                page_size: PAGE_SIZE,
+                ordering,
+            });
+            if (debouncedSearch) params.set('search', debouncedSearch);
+            if (filterActive !== null) params.set('is_active', filterActive);
+            if (filterStaff !== null) params.set('is_staff', filterStaff);
 
-            const response = await api.get(url);
-            setUsers(response.data.results || []);
-            setTotalUsers(response.data.count || 0);
+            const res = await api.get(`${ENDPOINTS.ADMIN.USERS}?${params}`);
+            const data = res.data || res;
+            setUsers(data.results || []);
+            setTotalUsers(data.count || 0);
         } catch (err) {
             console.error('Failed to fetch users:', err);
             setError('Failed to load users.');
@@ -101,53 +107,133 @@ export function AdminProfile() {
     // Reset to page 1 when filters change
     useEffect(() => { setPage(1); }, [debouncedSearch, filterActive, filterStaff, ordering]);
 
-    // Toggle user active status
-    const handleToggleActive = async (targetUser) => {
-        if (targetUser.id === user.id) return;
+    // --- Confirmation Modal Helpers ---
+
+    const openConfirm = (type, targetUser) => {
+        setConfirmInput('');
+        setConfirmModal({ type, targetUser });
+    };
+
+    const closeConfirm = () => {
+        setConfirmModal(null);
+        setConfirmInput('');
+    };
+
+    // Execute confirmed action
+    const executeAction = async () => {
+        if (!confirmModal) return;
+        const { type, targetUser } = confirmModal;
         setActionLoading(targetUser.id);
         try {
-            await api.patch(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id), {
-                is_active: !targetUser.is_active,
-            });
-            fetchUsers();
-            fetchStats();
+            if (type === 'delete') {
+                await api.delete(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id));
+                fetchUsers();
+                fetchStats();
+            } else if (type === 'toggle_active') {
+                await api.patch(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id), {
+                    is_active: !targetUser.is_active,
+                });
+                fetchUsers();
+                fetchStats();
+            } else if (type === 'toggle_admin') {
+                await api.patch(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id), {
+                    is_staff: !targetUser.is_staff,
+                });
+                fetchUsers();
+            }
+            closeConfirm();
         } catch (err) {
-            setError(err.message || 'Failed to update user.');
+            setError(err.message || 'Action failed.');
         } finally {
             setActionLoading(null);
         }
     };
 
-    // Toggle user admin status
-    const handleToggleAdmin = async (targetUser) => {
-        if (targetUser.id === user.id) return;
-        setActionLoading(targetUser.id);
-        try {
-            await api.patch(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id), {
-                is_staff: !targetUser.is_staff,
-            });
-            fetchUsers();
-        } catch (err) {
-            setError(err.message || 'Failed to update user.');
-        } finally {
-            setActionLoading(null);
+    // Check if confirm button should be enabled
+    const isConfirmEnabled = () => {
+        if (!confirmModal) return false;
+        if (actionLoading) return false;
+        // Delete requires typing the email
+        if (confirmModal.type === 'delete') {
+            return confirmInput === confirmModal.targetUser.email;
         }
+        return true;
     };
 
-    // Delete user
-    const handleDeleteUser = async (targetUser) => {
-        if (targetUser.id === user.id) return;
-        setActionLoading(targetUser.id);
-        try {
-            await api.delete(ENDPOINTS.ADMIN.USER_DETAIL(targetUser.id));
-            setDeleteConfirm(null);
-            fetchUsers();
-            fetchStats();
-        } catch (err) {
-            setError(err.message || 'Failed to delete user.');
-        } finally {
-            setActionLoading(null);
+    // Get modal content based on action type
+    const getModalContent = () => {
+        if (!confirmModal) return {};
+        const { type, targetUser } = confirmModal;
+        const name = targetUser.full_name || targetUser.email;
+
+        if (type === 'delete') {
+            return {
+                icon: Trash2,
+                iconClass: 'admin-modal__icon--danger',
+                title: 'Delete User Permanently',
+                description: (
+                    <>
+                        You are about to permanently delete <strong>{name}</strong>.
+                        This will remove all their practice data, sessions, and progress.
+                        <strong> This action cannot be undone.</strong>
+                    </>
+                ),
+                requiresInput: true,
+                inputLabel: `Type "${targetUser.email}" to confirm:`,
+                inputPlaceholder: targetUser.email,
+                confirmText: 'Delete Permanently',
+                confirmClass: 'admin-modal__btn--danger',
+            };
         }
+
+        if (type === 'toggle_admin') {
+            const granting = !targetUser.is_staff;
+            return {
+                icon: Shield,
+                iconClass: granting ? 'admin-modal__icon--warning' : 'admin-modal__icon--info',
+                title: granting ? 'Grant Admin Privileges' : 'Revoke Admin Privileges',
+                description: granting ? (
+                    <>
+                        You are about to make <strong>{name}</strong> an administrator.
+                        They will have full access to manage users, view system analytics,
+                        and perform administrative actions.
+                    </>
+                ) : (
+                    <>
+                        You are about to revoke admin privileges from <strong>{name}</strong>.
+                        They will lose access to the admin dashboard and user management.
+                    </>
+                ),
+                requiresInput: false,
+                confirmText: granting ? 'Grant Admin' : 'Revoke Admin',
+                confirmClass: granting ? 'admin-modal__btn--warning' : 'admin-modal__btn--info',
+            };
+        }
+
+        if (type === 'toggle_active') {
+            const deactivating = targetUser.is_active;
+            return {
+                icon: deactivating ? UserX : UserCheck,
+                iconClass: deactivating ? 'admin-modal__icon--warning' : 'admin-modal__icon--success',
+                title: deactivating ? 'Deactivate User' : 'Reactivate User',
+                description: deactivating ? (
+                    <>
+                        You are about to deactivate <strong>{name}</strong>.
+                        They will be unable to log in or use the platform until reactivated.
+                    </>
+                ) : (
+                    <>
+                        You are about to reactivate <strong>{name}</strong>.
+                        They will regain full access to the platform.
+                    </>
+                ),
+                requiresInput: false,
+                confirmText: deactivating ? 'Deactivate' : 'Reactivate',
+                confirmClass: deactivating ? 'admin-modal__btn--warning' : 'admin-modal__btn--success',
+            };
+        }
+
+        return {};
     };
 
     // Toggle sort column
@@ -165,6 +251,9 @@ export function AdminProfile() {
             </div>
         );
     }
+
+    const modalContent = getModalContent();
+    const ModalIcon = modalContent.icon;
 
     return (
         <div className="admin-profile">
@@ -224,6 +313,12 @@ export function AdminProfile() {
                             label="Active Today"
                             value={stats.active_today}
                             icon={Activity}
+                        />
+                        <StatCard
+                            label="Online Now"
+                            value={stats.online_now || 0}
+                            icon={Radio}
+                            accent="live"
                         />
                         <StatCard
                             label="Total Sessions"
@@ -288,25 +383,22 @@ export function AdminProfile() {
                     </div>
                     <div className="admin-users__filters">
                         <button
-                            className={`admin-filter-btn ${filterActive === true ? 'active' : filterActive === false ? 'active--neg' : ''}`}
-                            onClick={() => setFilterActive(prev => prev === true ? null : true)}
+                            className={`admin-filter-btn ${filterActive === 'true' ? 'active' : ''}`}
+                            onClick={() => setFilterActive(prev => prev === 'true' ? null : 'true')}
                         >
-                            <UserCheck size={14} />
-                            Active
+                            <UserCheck size={14} /> Active
                         </button>
                         <button
-                            className={`admin-filter-btn ${filterActive === false ? 'active' : ''}`}
-                            onClick={() => setFilterActive(prev => prev === false ? null : false)}
+                            className={`admin-filter-btn ${filterActive === 'false' ? 'active active--neg' : ''}`}
+                            onClick={() => setFilterActive(prev => prev === 'false' ? null : 'false')}
                         >
-                            <UserX size={14} />
-                            Inactive
+                            <UserX size={14} /> Inactive
                         </button>
                         <button
-                            className={`admin-filter-btn ${filterStaff === true ? 'active' : ''}`}
-                            onClick={() => setFilterStaff(prev => prev === true ? null : true)}
+                            className={`admin-filter-btn ${filterStaff === 'true' ? 'active' : ''}`}
+                            onClick={() => setFilterStaff(prev => prev === 'true' ? null : 'true')}
                         >
-                            <Shield size={14} />
-                            Admins
+                            <Shield size={14} /> Admins
                         </button>
                     </div>
                 </div>
@@ -324,21 +416,23 @@ export function AdminProfile() {
                         <table className="admin-users__table">
                             <thead>
                                 <tr>
-                                    <th className="admin-th--sortable" onClick={() => handleSort('full_name')}>
-                                        User
-                                        <ArrowUpDown size={12} />
-                                    </th>
-                                    <th className="admin-th--sortable" onClick={() => handleSort('email')}>
-                                        Email
-                                        <ArrowUpDown size={12} />
+                                    <th>
+                                        <span className="admin-th--sortable" onClick={() => handleSort('full_name')}>
+                                            User {ordering.includes('full_name') && <ArrowUpDown size={12} />}
+                                        </span>
+                                        <br />
+                                        <span className="admin-th--sortable" onClick={() => handleSort('email')}>
+                                            Email {ordering.includes('email') && <ArrowUpDown size={12} />}
+                                        </span>
                                     </th>
                                     <th>Level</th>
                                     <th>Sessions</th>
                                     <th>Avg Score</th>
                                     <th>Status</th>
-                                    <th className="admin-th--sortable" onClick={() => handleSort('last_login')}>
-                                        Last Login
-                                        <ArrowUpDown size={12} />
+                                    <th>
+                                        <span className="admin-th--sortable" onClick={() => handleSort('last_login')}>
+                                            Last Login {ordering.includes('last_login') && <ArrowUpDown size={12} />}
+                                        </span>
                                     </th>
                                     <th>Actions</th>
                                 </tr>
@@ -347,19 +441,20 @@ export function AdminProfile() {
                                 {users.map(u => {
                                     const isSelf = u.id === user.id;
                                     return (
-                                        <tr key={u.id} className={isSelf ? 'admin-tr--self' : ''}>
+                                        <tr
+                                            key={u.id}
+                                            className={isSelf ? 'admin-tr--self' : ''}
+                                        >
                                             <td>
                                                 <div className="admin-user-cell">
-                                                    <span className="admin-user-cell__name">{u.full_name || u.username}</span>
-                                                    {u.is_staff && (
-                                                        <span className="admin-badge admin-badge--staff">Admin</span>
-                                                    )}
-                                                    {isSelf && (
-                                                        <span className="admin-badge admin-badge--you">You</span>
-                                                    )}
+                                                    <span className="admin-user-cell__name">
+                                                        {u.full_name || u.username}
+                                                    </span>
+                                                    {u.is_staff && <span className="admin-badge admin-badge--staff">Admin</span>}
+                                                    {isSelf && <span className="admin-badge admin-badge--you">You</span>}
                                                 </div>
+                                                <div className="admin-td--email">{u.email}</div>
                                             </td>
-                                            <td className="admin-td--email">{u.email}</td>
                                             <td>
                                                 <span className={`admin-level admin-level--${u.proficiency_level}`}>
                                                     {u.proficiency_level}
@@ -367,10 +462,10 @@ export function AdminProfile() {
                                             </td>
                                             <td className="admin-td--num">{u.sessions_count}</td>
                                             <td className="admin-td--num">
-                                                {u.avg_score != null ? `${Math.round(u.avg_score * 100)}%` : '—'}
+                                                {u.avg_score != null ? `${Math.round(u.avg_score * 100)}%` : '–'}
                                             </td>
                                             <td>
-                                                <span className={`admin-status ${u.is_active ? 'admin-status--active' : 'admin-status--inactive'}`}>
+                                                <span className={`admin-status admin-status--${u.is_active ? 'active' : 'inactive'}`}>
                                                     {u.is_active ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
@@ -387,7 +482,7 @@ export function AdminProfile() {
                                                         <>
                                                             <button
                                                                 className={`admin-action-btn ${u.is_active ? 'admin-action-btn--warn' : 'admin-action-btn--success'}`}
-                                                                onClick={() => handleToggleActive(u)}
+                                                                onClick={() => openConfirm('toggle_active', u)}
                                                                 disabled={isSelf}
                                                                 title={u.is_active ? 'Deactivate user' : 'Activate user'}
                                                             >
@@ -395,7 +490,7 @@ export function AdminProfile() {
                                                             </button>
                                                             <button
                                                                 className={`admin-action-btn ${u.is_staff ? 'admin-action-btn--active' : ''}`}
-                                                                onClick={() => handleToggleAdmin(u)}
+                                                                onClick={() => openConfirm('toggle_admin', u)}
                                                                 disabled={isSelf}
                                                                 title={u.is_staff ? 'Remove admin' : 'Make admin'}
                                                             >
@@ -403,7 +498,7 @@ export function AdminProfile() {
                                                             </button>
                                                             <button
                                                                 className="admin-action-btn admin-action-btn--danger"
-                                                                onClick={() => setDeleteConfirm(u)}
+                                                                onClick={() => openConfirm('delete', u)}
                                                                 disabled={isSelf}
                                                                 title="Delete user"
                                                             >
@@ -445,32 +540,45 @@ export function AdminProfile() {
                 )}
             </section>
 
-            {/* Delete confirmation modal */}
-            {deleteConfirm && (
-                <div className="admin-modal-overlay" onClick={() => setDeleteConfirm(null)}>
+            {/* Unified Confirmation Modal */}
+            {confirmModal && (
+                <div className="admin-modal-overlay" onClick={closeConfirm}>
                     <div className="admin-modal" onClick={e => e.stopPropagation()}>
-                        <div className="admin-modal__icon">
-                            <AlertTriangle size={32} />
+                        <div className={`admin-modal__icon ${modalContent.iconClass || ''}`}>
+                            {ModalIcon && <ModalIcon size={32} />}
                         </div>
-                        <h3>Delete User</h3>
-                        <p>
-                            Are you sure you want to permanently delete
-                            <strong> {deleteConfirm.full_name || deleteConfirm.email}</strong>?
-                            This will remove all their practice data, sessions, and progress. This action cannot be undone.
-                        </p>
+                        <h3>{modalContent.title}</h3>
+                        <p>{modalContent.description}</p>
+
+                        {modalContent.requiresInput && (
+                            <div className="admin-modal__input-group">
+                                <label className="admin-modal__input-label">
+                                    {modalContent.inputLabel}
+                                </label>
+                                <input
+                                    type="text"
+                                    className="admin-modal__input"
+                                    placeholder={modalContent.inputPlaceholder}
+                                    value={confirmInput}
+                                    onChange={e => setConfirmInput(e.target.value)}
+                                    autoFocus
+                                />
+                            </div>
+                        )}
+
                         <div className="admin-modal__actions">
                             <button
                                 className="btn btn--secondary"
-                                onClick={() => setDeleteConfirm(null)}
+                                onClick={closeConfirm}
                             >
                                 Cancel
                             </button>
                             <button
-                                className="btn admin-modal__delete-btn"
-                                onClick={() => handleDeleteUser(deleteConfirm)}
-                                disabled={actionLoading === deleteConfirm.id}
+                                className={`btn ${modalContent.confirmClass || 'admin-modal__btn--danger'}`}
+                                onClick={executeAction}
+                                disabled={!isConfirmEnabled()}
                             >
-                                {actionLoading === deleteConfirm.id ? <Spinner size="sm" /> : 'Delete'}
+                                {actionLoading ? <Spinner size="sm" /> : modalContent.confirmText}
                             </button>
                         </div>
                     </div>
