@@ -10,7 +10,7 @@ import { useUI } from '../context/UIContext';
 import { DEFAULT_SETTINGS } from '../config/globalConfig';
 import {
     Monitor, Moon, Sun, Type, Check, RefreshCw,
-    Bell, Volume2, Mic, Target, Shield, Download,
+    Bell, Volume2, Target, Shield, Download,
     Trash2, UserX, Clock, Minus, Plus
 } from 'lucide-react';
 import './SettingsPage.css';
@@ -76,26 +76,6 @@ const SettingsPage = () => {
         }
     };
 
-    const [isTesting, setIsTesting] = useState(false);
-
-    /**
-     * Test Microphone
-     */
-    const handleTestMic = async () => {
-        try {
-            setIsTesting(true);
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            toast.success('Microphone is working correctly');
-            // Stop the stream after test
-            setTimeout(() => {
-                stream.getTracks().forEach(track => track.stop());
-                setIsTesting(false);
-            }, 2000);
-        } catch (error) {
-            toast.error('Microphone access denied or not available');
-            setIsTesting(false);
-        }
-    };
 
     /**
      * Handle Export Data (placeholder)
@@ -114,6 +94,8 @@ const SettingsPage = () => {
                 </p>
             </header>
 
+            {/* Grid layout for sections */}
+            <div className="settings__grid">
             {/* =========================================
                 Appearance Section
                 ========================================= */}
@@ -330,24 +312,7 @@ const SettingsPage = () => {
                         </div>
                     </div>
 
-                    {/* Test Microphone */}
-                    <div className="settings__row">
-                        <div className="settings__row-label">
-                            <h3>Test Microphone</h3>
-                            <p>Check if your microphone is working.</p>
-                        </div>
-                        <div className="settings__row-control">
-                            <button
-                                type="button"
-                                onClick={handleTestMic}
-                                disabled={isTesting}
-                                className={`settings__test-btn ${isTesting ? 'settings__test-btn--recording' : ''}`}
-                            >
-                                <Mic size={16} />
-                                {isTesting ? 'Listening...' : 'Test Mic'}
-                            </button>
-                        </div>
-                    </div>
+
                 </div>
             </section>
 
@@ -457,6 +422,7 @@ const SettingsPage = () => {
                     </div>
                 </div>
             </section>
+            </div> {/* End settings__grid */}
 
             {/* Footer / Reset */}
             <footer className="settings__footer">

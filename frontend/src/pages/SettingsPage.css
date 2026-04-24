@@ -7,9 +7,31 @@
    Settings Page Layout
    ========================================= */
 .settings {
-    max-width: 56rem;
+    max-width: 90rem;
     margin: 0 auto;
     padding: 2rem 1rem;
+}
+
+/* Grid layout for sections */
+.settings__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .settings__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .settings {
+        padding: 2rem 2.5rem;
+    }
+    .settings__grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 .settings__header {
@@ -46,8 +68,9 @@
     border: 1px solid var(--color-gray-200);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     overflow: hidden;
-    margin-bottom: 1.5rem;
     transition: box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
 .settings__section:hover {
@@ -97,13 +120,13 @@
 }
 
 .settings__section-icon--audio {
-    background: #dbeafe;
-    color: #2563eb;
+    background: #ccfbf1;
+    color: #0d9488;
 }
 
 .settings__section-icon--practice {
-    background: #f3e8ff;
-    color: #7c3aed;
+    background: #ffe4e6;
+    color: #e11d48;
 }
 
 .settings__section-icon--privacy {
@@ -120,11 +143,11 @@
 }
 
 [data-theme="dark"] .settings__section-icon--audio {
-    background: rgba(37, 99, 235, 0.2);
+    background: rgba(13, 148, 136, 0.2);
 }
 
 [data-theme="dark"] .settings__section-icon--practice {
-    background: rgba(124, 58, 237, 0.2);
+    background: rgba(225, 29, 72, 0.2);
 }
 
 [data-theme="dark"] .settings__section-icon--privacy {
@@ -155,16 +178,16 @@
 /* Section Body */
 .settings__section-body {
     padding: 1.5rem;
+    flex: 1;
 }
 
 /* =========================================
    Settings Rows
    ========================================= */
 .settings__row {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 1.5rem;
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 1rem 0;
 }
 
@@ -709,11 +732,6 @@
         padding: 1rem;
     }
 
-    .settings__row {
-        grid-template-columns: 1fr;
-        gap: 0.75rem;
-    }
-
     .settings__theme-buttons {
         flex-wrap: wrap;
     }
@@ -726,4 +744,9 @@
         width: 2.5rem;
         height: 2.5rem;
     }
+}
+
+/* Settings section span modifiers */
+.settings__section--wide {
+    grid-column: 1 / -1;
 }

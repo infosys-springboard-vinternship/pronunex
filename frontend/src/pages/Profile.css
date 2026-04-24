@@ -2,13 +2,19 @@
 
 .profile {
     padding: var(--space-6) var(--space-4);
-    max-width: 900px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
 @media (min-width: 768px) {
     .profile {
         padding: var(--space-8);
+    }
+}
+
+@media (min-width: 1024px) {
+    .profile {
+        padding: var(--space-8) var(--space-10);
     }
 }
 
@@ -144,9 +150,21 @@
 
 /* Content */
 .profile__content {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr;
     gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+    .profile__content {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .profile__content {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
 /* Sections */
